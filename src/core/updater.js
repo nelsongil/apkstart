@@ -5,7 +5,7 @@
  * 三个形态都要照顾到：
  *   - 安装版（NSIS）：下载 `ApkStart-x.y.z-Setup.exe`，静默安装（/S）；
  *   - 轻量版（便携 zip，运行时按需下载）：下载 `ApkStart-vX-win64-portable.zip`，
- *     解压后覆盖程序目录 —— 运行时目录（%APPDATA%\apkstart\runtime）与已装应用、
+ *     解压后覆盖程序目录 —— 运行时目录（%APPDATA%\apkstart\runtime）与已装App、
  *     快照全都在用户目录里，替换程序文件不会动它们；
  *   - 完整版（便携但带 runtime）：同轻量版，只是目录里多了 resources\runtime。
  *
@@ -107,7 +107,7 @@ class Updater {
         }
         : null,
       assets: merged.assets,
-      // 两个源各自的最新版本 / 谁不可达，界面上可以如实显示「这次走的哪个源」
+      // 两个源各自的最新版本 / 谁no responde，界面上可以如实显示「这次走的哪个源」
       sources: merged.sources,
       unreachable: merged.unreachable,
       flavor: this.flavor,
@@ -125,7 +125,7 @@ class Updater {
    */
   async prepare(info) {
     const it = info || this.latest;
-    if (!it || !it.asset) throw new Error('这个版本没有可自动安装的安装包，请到 GitHub 发布页手动下载');
+    if (!it || !it.asset) throw new Error('Esta versión no tiene un paquete de instalación automática; descárgala a mano desde la página de versiones de GitHub');
     const dir = path.join(this.updateDir, it.version);
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, it.asset.name);
@@ -138,7 +138,7 @@ class Updater {
     if (it.asset.parts && it.asset.parts.length) {
       await this._downloadParts(it.asset, file, conns, total);
     } else {
-      this.onProgress({ stage: 'download', percent: 1, message: `正在下载 ${it.asset.name}…` });
+      this.onProgress({ stage: 'download', percent: 1, message: `Descargando ${it.asset.name}…` });
       // 候选地址 = 源站 + 镜像前缀；先各下 256KB 实测速度，再拿最快的那个分块下载。
       // 这是「GitHub 直连几十 KB/s、镜像能跑几 MB/s」时唯一靠谱的选路方式：
       // 按域名猜没用，同一天不同时段差别很大。
@@ -161,7 +161,7 @@ class Updater {
           this.onProgress({
             stage: 'download',
             percent: Math.max(1, Math.min(99, pct)),
-            message: `下载中 ${mb}${sp}`,
+            message: `Descargando ${mb}${sp}`,
             speed: pr.speed,
           });
         },
@@ -173,10 +173,10 @@ class Updater {
       fs.rmSync(out, { recursive: true, force: true });
       fs.mkdirSync(out, { recursive: true });
       await this._extract(file, out);
-      this.onProgress({ stage: 'ready', percent: 100, message: '更新包已解压完成' });
+      this.onProgress({ stage: 'ready', percent: 100, message: 'El paquete de actualización se ha extraído' });
       return { mode: 'zip', payload: out, version: it.version };
     }
-    this.onProgress({ stage: 'ready', percent: 100, message: '安装包已下载完成' });
+    this.onProgress({ stage: 'ready', percent: 100, message: 'El paquete de instalación se ha descargado' });
     return { mode: 'setup', payload: file, version: it.version };
   }
 
@@ -209,15 +209,15 @@ class Updater {
             this.onProgress({
               stage: 'download',
               percent: Math.max(1, Math.min(99, pct)),
-              message: `下载中 ${(got / 1048576).toFixed(1)} MB${total ? ` / ${(total / 1048576).toFixed(1)} MB` : ''}`
-                + `（第 ${part.index}/${asset.parts.length} 片）${sp}`,
+              message: `Descargando ${(got / 1048576).toFixed(1)} MB${total ? ` / ${(total / 1048576).toFixed(1)} MB` : ''}`
+                + `（parte ${part.index}/${asset.parts.length})${sp}`,
               speed: pr.speed,
             });
           },
         });
         const buf = fs.readFileSync(tmp);
         if (part.size && buf.length !== part.size) {
-          throw new Error(`分片 ${part.index} 大小不对（${buf.length} ≠ ${part.size}），已中止，可重试`);
+          throw new Error(`El tamaño de la parte ${part.index} no es correcto (${buf.length} ≠ ${part.size}); se ha detenido y puedes reintentar`);
         }
         fs.writeSync(fd, buf, 0, buf.length, doneBytes);
         doneBytes += buf.length;
@@ -227,7 +227,7 @@ class Updater {
       fs.closeSync(fd);
     }
     if (total && doneBytes !== total) {
-      throw new Error(`更新包拼装后大小不对（${doneBytes} ≠ ${total}），已中止，可重试`);
+      throw new Error(`El tamaño del paquete de actualización no cuadra tras unirlo (${doneBytes} ≠ ${total}); se ha detenido y puedes reintentar`);
     }
   }
 
@@ -246,7 +246,7 @@ class Updater {
           this.onProgress({
             stage: 'extract',
             percent: Math.min(99, Math.round((i / names.length) * 100)),
-            message: `正在解压 ${i}/${names.length}`,
+            message: `Extrayendo ${i}/${names.length}`,
           });
         }
       }
@@ -256,7 +256,7 @@ class Updater {
   }
 
   /**
-   * 生成并启动「替换 + 重启」脚本，然后调用方负责退出应用。
+   * 生成并启动「替换 + 重启」脚本，然后调用方负责退出App。
    * @param {{mode:'zip'|'setup', payload:string, version:string}} job
    * @param {{waitPid?:number, spawn?:boolean}} [opts] 测试时可指定别的 pid / 不真启动
    */

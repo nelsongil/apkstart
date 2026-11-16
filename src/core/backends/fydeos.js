@@ -1,8 +1,8 @@
 'use strict';
 /**
- * 底座：FydeOS / ChromeOS 自带的安卓子系统（ARC）
+ * 底座：FydeOS / ChromeOS 自带的Subsistema Android（ARC）
  *
- * 和自带模拟器、MuMu 这些「另起一台安卓虚拟机」的底座不同：FydeOS 本身就是一个
+ * 和自带Emulador、MuMu 这些「另起一台安卓虚拟机」的底座不同：FydeOS 本身就是一个
  * 操作系统，安卓是它系统的一部分（ARC 容器）。所以这个底座没有「开机 / 关机 /
  * 装镜像」这些动作 —— 安卓已经在跑了，我们只是通过 adb 接管它。
  *
@@ -13,12 +13,12 @@
  *
  *   B. ApkStart 跑在 Windows 上，FydeOS 跑在 VMware / VirtualBox 里
  *      Windows 上没有「本机安卓」，必须知道那台虚拟机的地址，所以要让用户填
- *      （设置 → FydeOS 安卓子系统地址）。最省事的配法是给虚拟机做 NAT 端口转发：
+ *      （设置 → FydeOS Subsistema Android地址）。最省事的配法是给虚拟机做 NAT 端口转发：
  *      宿主 5555 → guest 5555，然后地址填 127.0.0.1:5555。
  *
  * 代价：**不能嵌入窗口**。窗口嵌入靠 Windows 的 SetParent(HWND)，
  * 而 FydeOS 的画面在它自己的桌面（Aura/Wayland）里；即使 FydeOS 跑在虚拟机窗口里，
- * 那个窗口是整台 FydeOS 的桌面，不是一个安卓应用。所以画面交给 FydeOS 自己显示，
+ * 那个窗口是整台 FydeOS 的桌面，不是一个App de Android。所以画面交给 FydeOS 自己显示，
  * ApkStart 负责「装包 / 启动 / 图标 / 清单」这一层。
  *
  * 接入步骤（官方文档 + 社区实测）：
@@ -29,7 +29,7 @@
  * 端口 5555 是 ARC 里 adbd 的固定端口（ChromiumOS 的 adb-proxy 会把它转发出来）。
  *
  * ⚠️ 现实提醒（写在代码里免得以后忘）：FydeOS 官方的 VMware 镜像是 **preview**，
- * 官方自己写明「仅用于测试和预览」，社区反馈其安卓子系统经常不能用（应用没网、
+ * 官方自己写明「仅用于测试和预览」，社区反馈其Subsistema Android经常不能用（App没网、
  * adb 连上是黑屏）。所以这条路能用，但别指望它比自带运行时更稳。详见 docs/fydeos.md。
  */
 
@@ -125,7 +125,7 @@ function detectVmHost() {
       { timeout: 4000, windowsHide: true, encoding: 'utf8' });
     for (const p of VM_PROCESSES) {
       if (new RegExp(`^"${p.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\.exe"`, 'mi').test(out)) {
-        return { found: true, label: p.label, detail: `检测到 ${p.label} 正在运行` };
+        return { found: true, label: p.label, detail: `Se ha detectado ${p.label} en ejecución` };
       }
     }
   } catch (_) { /* tasklist 失败就当没有 */ }
@@ -145,12 +145,12 @@ class FydeosBackend extends Backend {
 
   static get id() { return 'fydeos'; }
 
-  static get label() { return 'FydeOS 安卓子系统'; }
+  static get label() { return 'Subsistema Android de FydeOS'; }
 
   static get summary() {
-    return '用 FydeOS 自带的安卓环境跑应用，没有 Google 模拟器那层虚拟机。'
-      + 'FydeOS 可以装在本机，也可以跑在 VMware / VirtualBox 里由 ApkStart 连过去。'
-      + '需要在 FydeOS 的安卓设置里打开「ADB 调试」。';
+    return 'Ejecuta las apps con el entorno Android propio de FydeOS, sin la máquina virtual del emulador de Google.'
+      + 'Puede instalarse en el equipo o ejecutarse en VMware / VirtualBox y que ApkStart se conecte.'
+      + 'Hay que activar «Depuración ADB» en los ajustes de Android de FydeOS.';
   }
 
   /** 没有 HWND 可嵌 —— 画面由 FydeOS 自己的窗口（或虚拟机窗口）显示 */
@@ -222,11 +222,11 @@ class FydeosBackend extends Backend {
       //   2) 有虚拟机在跑（大概率就是跑着 FydeOS）。
       const t = splitHost(this.hostOverride);
       if (t && await tcpAlive(t.host, t.port).catch(() => false)) {
-        return { ok: true, found: true, path: '', detail: `FydeOS 在 ${this.hostOverride} 上可达` };
+        return { ok: true, found: true, path: '', detail: `FydeOS Accesible en ${this.hostOverride}` };
       }
       const vm = detectVmHost();
       if (vm.found) return { ok: true, found: true, path: '', detail: vm.detail };
-      return { ok: true, found: false, path: '', detail: '未检测到虚拟机或 FydeOS 地址' };
+      return { ok: true, found: false, path: '', detail: 'No se ha detectado la máquina virtual ni la dirección de FydeOS' };
     }
     const d = distroInfo();
     let portOpen = false;
@@ -236,7 +236,7 @@ class FydeosBackend extends Backend {
       ok: true,
       found,
       path: '',
-      detail: d.name || (portOpen ? '检测到本机 5555 端口（可能是 ARC）' : ''),
+      detail: d.name || (portOpen ? 'Se ha detectado el puerto 5555 local (posiblemente ARC)' : ''),
     };
   }
 
@@ -245,15 +245,15 @@ class FydeosBackend extends Backend {
     const r = await this._exec(['devices']);
     if (!r.out) {
       return IS_WIN
-        ? { ok: false, reason: '找不到 adb。请先完成运行时部署（设置 → 运行时 → 一键完成）。', needs: 'adb' }
-        : { ok: false, reason: '找不到 adb。请在 Linux 子系统里执行：sudo apt install adb', needs: 'adb' };
+        ? { ok: false, reason: 'No se encuentra adb. Configura antes el entorno (Ajustes → Entorno → Completar todo).', needs: 'adb' }
+        : { ok: false, reason: 'No se encuentra adb. En el subsistema Linux ejecuta: sudo apt install adb', needs: 'adb' };
     }
     const online = /^\S+\s+device$/m.test(r.out);
     if (online) return { ok: true };
     if (/unauthorized/i.test(r.out)) {
       return {
         ok: false,
-        reason: 'FydeOS 弹出了「允许调试」授权框。请切到 FydeOS 的安卓界面点「允许」后重试。',
+        reason: 'Ha aparecido el cuadro «Permitir depuración». Cambia a la interfaz de Android de FydeOS, pulsa «Permitir» y reinténtalo.',
         needs: 'authorize',
       };
     }
@@ -261,15 +261,15 @@ class FydeosBackend extends Backend {
     if (IS_WIN && !this.hostOverride) {
       return {
         ok: false,
-        reason: '请先填 FydeOS 的地址（例如 127.0.0.1:5555，或 VMware NAT 里那台虚拟机的 IP:5555），'
-          + '并确认 FydeOS 的安卓设置里已打开「ADB 调试」。',
+        reason: 'Escribe antes la dirección de FydeOS (por ejemplo 127.0.0.1:5555, o la IP:5555 de la máquina virtual en la NAT de VMware),'
+          + 'y comprueba que «Depuración ADB» está activada en los ajustes de Android de FydeOS.',
         needs: 'host',
       };
     }
     return {
       ok: false,
-      reason: '没有连上 FydeOS 的安卓子系统。请确认：1) FydeOS 正在运行；'
-        + '2) 安卓设置 → 系统 → 开发者选项 → 已打开「ADB 调试」；3) 地址填对了。',
+      reason: 'No se ha conectado al subsistema Android de FydeOS. Comprueba: 1) que FydeOS esté en ejecución;'
+        + '2) 2) que «Depuración ADB» esté activada en Ajustes de Android → Sistema → Opciones de desarrollador; 3) que la dirección sea correcta.',
       needs: 'adb-debug',
     };
   }
@@ -289,7 +289,7 @@ class FydeosBackend extends Backend {
 
     // 依次尝试候选目标；连上后等它真的变成 device
     for (const target of this._targets()) {
-      onLog(`正在连接 FydeOS 安卓子系统：${target}…`);
+      onLog(`Conectando con el subsistema Android de FydeOS: ${target}…`);
       // eslint-disable-next-line no-await-in-loop
       const c = await this._exec(['connect', target], { timeout: 10000 });
       const okConnect = /connected|already connected/i.test(c.out + c.err);
@@ -307,17 +307,17 @@ class FydeosBackend extends Backend {
           return { ok: true, serial: target, adbPath: this.adbPath };
         }
         if (/unauthorized/.test(d.out + d.err)) {
-          this.lastError = '需要授权';
-          onLog('FydeOS 弹出了「允许调试」授权框，请在安卓界面点「允许」…');
+          this.lastError = 'Requiere autorización';
+          onLog('Ha aparecido el cuadro «Permitir depuración»; pulsa «Permitir» en la interfaz de Android…');
         }
         // eslint-disable-next-line no-await-in-loop
         await sleep(1000);
       }
-      this.lastError = this.lastError || '连接后设备未就绪';
+      this.lastError = this.lastError || 'El dispositivo no está listo tras conectar';
     }
     return {
       ok: false,
-      error: this.lastError || '没能连上 FydeOS 安卓子系统。请确认已开启「ADB 调试」，并允许授权框。',
+      error: this.lastError || 'No se pudo conectar al subsistema Android de FydeOS. Comprueba que «Depuración ADB» está activa y acepta el cuadro de autorización.',
     };
   }
 
@@ -329,19 +329,19 @@ class FydeosBackend extends Backend {
   async hideWindow() { return null; }
 
   /**
-   * 不真的去关安卓：那是系统的一部分，关掉会影响用户其它应用。
+   * 不真的去关安卓：那是系统的一部分，关掉会影响用户其它App。
    * 这里只是断开 adb 连接，保持系统原样。
    */
   async stop() {
     if (this.serial) {
       await this._exec(['disconnect', this.serial], { timeout: 5000 }).catch(() => {});
     }
-    return { ok: true, note: 'FydeOS 的安卓子系统由系统管理，这里只断开连接' };
+    return { ok: true, note: 'El subsistema Android lo gestiona el sistema; aquí solo se desconecta' };
   }
 
   usage() { return { total: 0, items: [] }; }
 
-  dataInfo() { return { ok: false, note: '数据由 FydeOS 系统管理' }; }
+  dataInfo() { return { ok: false, note: 'Los datos los gestiona el sistema FydeOS' }; }
 
   diagnose() {
     const d = distroInfo();

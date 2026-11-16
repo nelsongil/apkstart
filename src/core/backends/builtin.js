@@ -4,7 +4,7 @@
  *
  * 这是 ApkStart 的默认底座，也是唯一「完全自持」的底座：
  * adb / emulator / 系统镜像都由 ApkStart 自己下载和管理，不依赖用户机器上
- * 已经装了什么模拟器。
+ * 已经装了什么Emulador。
  *
  * 真正的实现在 core/engine.js（Runtime）与 core/emulator.js（EmulatorEngine）里，
  * 本文件只做一层薄适配，把它们的接口翻译成本层约定，这样上层不需要知道
@@ -19,11 +19,11 @@ const { Backend, CAPS } = require('./base');
 class BuiltinBackend extends Backend {
   static get id() { return 'builtin'; }
 
-  static get label() { return '自带运行时（Android Emulator + QEMU）'; }
+  static get label() { return 'Entorno integrado (Android Emulator + QEMU)'; }
 
   static get summary() {
-    return '零第三方依赖：apkstart 自己下载并管理 Android 14 镜像，ARM 应用走镜像自带的翻译层。'
-      + '首次启动约 25 秒，之后靠 quickboot 快照秒进。';
+    return 'Sin dependencias de terceros: apkstart descarga y gestiona la imagen de Android 14, y las apps ARM usan la capa de traducción incluida en la imagen.'
+      + 'El primer arranque tarda unos 25 segundos; después, con la instantánea de arranque rápido, entra al instante.';
   }
 
   static get embedCapable() { return true; }
@@ -51,28 +51,28 @@ class BuiltinBackend extends Backend {
   running() { return !!(this.rt && this.rt.emuRunning); }
 
   async probe() {
-    if (!this.rt) return { ok: false, found: false, detail: '运行时未初始化' };
+    if (!this.rt) return { ok: false, found: false, detail: 'El entorno no está inicializado' };
     const p = this.rt.provisioner.paths();
     const found = fs.existsSync(p.emulatorExe) || fs.existsSync(p.adbExe);
     return { ok: true, found, path: p.emulatorExe, detail: p.root };
   }
 
   async check() {
-    if (!this.rt) return { ok: false, reason: '运行时未初始化' };
+    if (!this.rt) return { ok: false, reason: 'El entorno no está inicializado' };
     const env = await this.rt.provisioner.checkEnv().catch(() => null);
-    if (!env) return { ok: false, reason: '运行时探测失败' };
-    if (!env.adb.ok) return { ok: false, reason: '缺 adb', needs: 'adb' };
-    if (!env.emulator.ok) return { ok: false, reason: '缺 Android Emulator', needs: 'emulator' };
-    if (!env.sysimg.ok) return { ok: false, reason: '缺系统镜像', needs: 'sysimg' };
+    if (!env) return { ok: false, reason: 'Error al detectar el entorno' };
+    if (!env.adb.ok) return { ok: false, reason: 'Falta adb', needs: 'adb' };
+    if (!env.emulator.ok) return { ok: false, reason: 'Falta Android Emulator', needs: 'emulator' };
+    if (!env.sysimg.ok) return { ok: false, reason: 'Falta la imagen del sistema', needs: 'sysimg' };
     return { ok: true, env };
   }
 
   async resolveAdb() { return this.rt ? this.rt.adbPath() : ''; }
 
   async ensure({ onLog = () => {} } = {}) {
-    if (!this.rt) return { ok: false, error: '运行时未初始化' };
+    if (!this.rt) return { ok: false, error: 'El entorno no está inicializado' };
     const r = await this.rt.ensure({ onLog });
-    if (!r || !r.ok) return { ok: false, error: (r && r.error) || '安卓运行时未能启动' };
+    if (!r || !r.ok) return { ok: false, error: (r && r.error) || 'El entorno de Android no pudo iniciarse' };
     // serial 用可写字段（见 syncSerial 的说明），ensure 成功后同步一次
     this.syncSerial();
     this.adbPath = this.rt.adbPath();
@@ -98,13 +98,13 @@ class BuiltinBackend extends Backend {
   }
 
   async stop({ graceful = true } = {}) {
-    if (!this.rt) return { ok: false, error: '运行时未初始化' };
+    if (!this.rt) return { ok: false, error: 'El entorno no está inicializado' };
     const ok = await this.rt.stop({ graceful }).catch((e) => ({ error: e.message }));
     return { ok: ok !== false };
   }
 
   async install(component, onProgress = () => {}) {
-    if (!this.rt) return { ok: false, error: '运行时未初始化' };
+    if (!this.rt) return { ok: false, error: 'El entorno no está inicializado' };
     const prov = this.rt.provisioner;
     switch (component) {
       case 'runtime': return prov.installRuntimePack(onProgress);
@@ -114,7 +114,7 @@ class BuiltinBackend extends Backend {
       case 'playimg': return prov.installPlayImage(onProgress);
       case 'aehd': return prov.installAehd(onProgress);
       case 'qemu': return prov.installQemu(onProgress);
-      default: return { ok: false, error: `未知组件 ${component}` };
+      default: return { ok: false, error: `Componente desconocido ${component}` };
     }
   }
 

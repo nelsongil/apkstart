@@ -3,15 +3,15 @@
  * 后端适配层（backend driver）—— 把「安卓从哪来」这件事从 Runtime 里抽出来。
  *
  * 背景：ApkStart 原本只有一个底座（自带 Google Android Emulator / QEMU），
- * 引擎的生命周期（开机、快照、空闲回收、镜像下载）全部写死在 core/engine.js 里。
- * 但「双击 APK 装好、双击图标打开、每个应用一个干净窗口」这部分体验，
+ * Motor的生命周期（开机、快照、空闲回收、镜像下载）全部写死在 core/engine.js 里。
+ * 但「双击 APK 装好、双击图标打开、每个App一个干净窗口」这部分体验，
  * 对底座其实只有三个要求：
  *
  *   1. 有一个能连上的 adb 设备（装包 / 启动 / 输入 / 截图都靠它）；
  *   2. 有一块能拿到 HWND 的安卓画面窗口（用 SetParent 嵌进我们自己的窗口）；
  *   3. 能把这台设备启动 / 停掉。
  *
- * 只要满足这三条，底座可以是自家 QEMU，也可以是用户电脑上已经装好的模拟器
+ * 只要满足这三条，底座可以是自家 QEMU，也可以是用户电脑上已经装好的Emulador
  * （MuMu / 雷电 / 蓝叠…），甚至是 WSA 这类系统级运行时。
  * 本文件定义这层接口；具体实现放在同目录下，一个文件一个底座。
  *
@@ -33,11 +33,11 @@ const CAPS = {
   resetData: 'resetData',
   /** 能改物理面板方向（真横屏，靠重启实现） */
   rotatePanel: 'rotatePanel',
-  /** 能调进程优先级（把虚拟机让给前台应用） */
+  /** 能调进程优先级（把虚拟机让给前台App） */
   priority: 'priority',
   /** 能彻底关掉自己（卸载/退出时调用） */
   shutdown: 'shutdown',
-  /** 画面窗口由第三方软件创建，不能过多「借」它的窗口（避免抢走用户自己的模拟器） */
+  /** 画面窗口由第三方软件创建，不能过多「借」它的窗口（避免抢走用户自己的Emulador） */
   sharedHost: 'sharedHost',
 };
 
@@ -61,7 +61,7 @@ class Backend {
   static get id() { return 'base'; }
 
   /** 界面上显示的名字 */
-  static get label() { return '未命名后端'; }
+  static get label() { return 'Motor sin nombre'; }
 
   /** 一句话说明，设置页用它解释这个底座是什么 */
   static get summary() { return ''; }
@@ -92,11 +92,11 @@ class Backend {
   async probe() { return { ok: true, found: false }; }
 
   /**
-   * 就绪检查：用户能不能现在就用它装应用。
+   * Listo检查：用户能不能现在就用它装App。
    * @returns {Promise<{ok:boolean, reason?:string, needs?:string}>}
    */
   // eslint-disable-next-line class-methods-use-this
-  async check() { return { ok: false, reason: '未实现' }; }
+  async check() { return { ok: false, reason: 'Sin implementar' }; }
 
   /** 解析可用的 adb 路径（优先自带，其次底座自带的，最后系统 PATH） */
   async resolveAdb() { return ''; }
@@ -107,7 +107,7 @@ class Backend {
    * @returns {Promise<{ok:boolean, serial?:string, adbPath?:string, reused?:boolean, error?:string}>}
    */
   // eslint-disable-next-line class-methods-use-this
-  async ensure(o = {}) { return { ok: false, error: '未实现' }; }
+  async ensure(o = {}) { return { ok: false, error: 'Sin implementar' }; }
 
   /**
    * 安卓画面窗口的候选 HWND（十六进制或十进制的字符串数组，按优先级排序）。
@@ -118,8 +118,8 @@ class Backend {
   async windowTargets() { return []; }
 
   /**
-   * 画面窗口是否已经就绪（可以停止隐藏/开始嵌入）。
-   * 默认：拿得到候选窗口就算就绪。
+   * 画面窗口是否已经Listo（可以停止隐藏/开始嵌入）。
+   * 默认：拿得到候选窗口就算Listo。
    * 第三方底座（例如 MuMu）需要额外确认「窗口真的出现在桌面上」，
    * 因为 Windows 在 SetParent 时会隐式清掉 WS_VISIBLE，
    * 把还没显示过的窗口塞进宿主里，宿主那边会是全黑且它自己也不会再显示。
@@ -133,7 +133,7 @@ class Backend {
   }
 
   /**
-   * 把画面窗口藏起来（开机 / 预热阶段，用户不该看到模拟器）。
+   * 把画面窗口藏起来（开机 / 预热阶段，用户不该看到Emulador）。
    * 拿不到窗口时静默返回 null。
    * @returns {Promise<string|null>} 藏起来的 HWND
    */
@@ -141,11 +141,11 @@ class Backend {
 
   /** 停止运行时 */
   // eslint-disable-next-line class-methods-use-this
-  async stop(o = {}) { return { ok: false, error: '未实现' }; }
+  async stop(o = {}) { return { ok: false, error: 'Sin implementar' }; }
 
   /** 下载/部署缺失组件（只有带 CAPS.provision 的底座需要实现） */
   // eslint-disable-next-line class-methods-use-this
-  async install(component, onProgress) { return { ok: false, error: '该后端不支持自动部署' }; }
+  async install(component, onProgress) { return { ok: false, error: 'Este motor no admite la configuración automática' }; }
 
   /** 占用统计（设置页「运行时占用」） */
   // eslint-disable-next-line class-methods-use-this
@@ -157,11 +157,11 @@ class Backend {
 
   /** 调整数据分区 */
   // eslint-disable-next-line class-methods-use-this
-  async resizeData(mb) { return { ok: false, error: '该后端不支持调整数据分区' }; }
+  async resizeData(mb) { return { ok: false, error: 'Este motor no permite ajustar la partición de datos' }; }
 
   /** 彻底重置安卓数据 */
   // eslint-disable-next-line class-methods-use-this
-  async resetData() { return { ok: false, error: '该后端不支持重置数据' }; }
+  async resetData() { return { ok: false, error: 'Este motor no permite restablecer los datos' }; }
 
   /** 释放资源（ApkStart 退出时调用；默认什么都不做） */
   // eslint-disable-next-line class-methods-use-this

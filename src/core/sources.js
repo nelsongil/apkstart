@@ -3,7 +3,7 @@
  * 双源（GitHub / Gitee）+ 镜像前缀的统一下载来源管理。
  *
  * 国内直连 GitHub 有两个坑：
- *   1. api.github.com 经常几十秒才响应，甚至直接超时 —— 表现是「检查更新转圈」；
+ *   1. api.github.com 经常几十秒才响应，甚至直接Tiempo agotado —— 表现是「检查更新转圈」；
  *   2. 资产下载（objects.githubusercontent.com）单连接限速，常在 100KB/s 上下 ——
  *      1.5 GB 的运行时包要下 4 个小时。
  *
@@ -53,9 +53,9 @@ const SAMPLE_BYTES = 256 * 1024;
 
 function openUrl(url, { timeout = 10000, headers = {}, redirects = 0, followRedirect = true } = {}) {
   return new Promise((resolve, reject) => {
-    if (redirects > 6) return reject(new Error('重定向次数过多'));
+    if (redirects > 6) return reject(new Error('Demasiadas redirecciones'));
     let u;
-    try { u = new URL(url); } catch (_) { return reject(new Error('地址无效')); }
+    try { u = new URL(url); } catch (_) { return reject(new Error('Dirección no válida')); }
     const mod = u.protocol === 'http:' ? http : https;
     const req = mod.request(url, {
       method: 'GET',
@@ -74,13 +74,13 @@ function openUrl(url, { timeout = 10000, headers = {}, redirects = 0, followRedi
       }
       resolve(res);
     });
-    req.on('timeout', () => req.destroy(new Error('连接超时')));
+    req.on('timeout', () => req.destroy(new Error('Se agotó el tiempo de conexión')));
     req.on('error', reject);
     req.end();
   });
 }
 
-/** 取一小段 JSON（带重定向、超时、大小上限） */
+/** 取一小段 JSON（带重定向、Tiempo agotado、大小上限） */
 async function getJson(url, timeout = 10000) {
   const res = await openUrl(url, { timeout });
   if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -230,7 +230,7 @@ class Sources {
   blockedReason(id) {
     const until = this._blocked.get(id) || 0;
     if (until <= Date.now()) return null;
-    return `暂时跳过（${Math.ceil((until - Date.now()) / 60000)} 分钟内不再尝试）`;
+    return `Se omite por ahora (no se reintentará en ${Math.ceil((until - Date.now()) / 60000)} minutos)`;
   }
 
   /** 各源的最新 release（并发，任何一个失败都不影响另一个） */
@@ -319,8 +319,8 @@ class Sources {
         const limited = /\b(403|429)\b/.test(e.message);
         if (limited) this._blocked.set(id, Date.now() + this._blockMs);
         const hint = limited
-          ? '（被限流，已暂停使用该源一段时间）'
-          : (id === 'gitee' && !token ? '（可稍后重试，或在设置里填只读 token 提高额度）' : '');
+          ? '（la fuente limita las peticiones; se ha pausado un tiempo)'
+          : (id === 'gitee' && !token ? '（puedes reintentar más tarde o poner un token de solo lectura en Ajustes para ampliar la cuota)' : '');
         return { source: id, name: s.name, web: s.web, error: `${e.message}${hint}` };
       }
     });
@@ -347,11 +347,11 @@ class Sources {
     }
     const ok = all.filter((x) => x && x.rel);
     if (!ok.length) {
-      const why = all.map((x) => `${x.name || x.source}: ${x.error || '无数据'}`).join('；');
+      const why = all.map((x) => `${x.name || x.source}: ${x.error || 'Sin datos'}`).join('；');
       // 全挂了但手里有上一次的结果：宁可给一份「可能是旧的」版本信息，
       // 也不要让界面直接报错 —— 用户至少还能看到当前版本和发布页入口。
       if (cached.value) return { ...cached.value, stale: true, staleReason: why };
-      throw new Error(`连不上更新服务器（${why}）`);
+      throw new Error(`No se puede conectar con el servidor de actualizaciones (${why})`);
     }
     ok.sort((a, b) => cmpVer(b.rel.tag_name || b.rel.name, a.rel.tag_name || a.rel.name));
     const top = ok[0];
@@ -463,7 +463,7 @@ class Sources {
       if (!c || now - c.at > this._rankTtl) need.push(u);
     }
     if (need.length) {
-      onProgress?.({ stage: 'probe', message: `正在测速 ${need.length} 个下载源…` });
+      onProgress?.({ stage: 'probe', message: `Midiendo la velocidad de ${need.length} fuentes de descarga…` });
       // 顺序测而不是并发测：并发会互相抢带宽，测出来的名次变成「谁抢得凶」，
       // 而不是「谁真的快」。每个源 256KB，正常也就一秒左右。
       // 单个源最多等 6 秒就放弃（旧版 9 秒 × 4 个源 = 最长 36 秒没有任何字节进度，
@@ -473,7 +473,7 @@ class Sources {
         i += 1;
         let host = u;
         try { host = new URL(u).host; } catch (_) { /* 地址不合法就原样显示 */ }
-        onProgress?.({ stage: 'probe', message: `正在测速第 ${i}/${need.length} 个源：${host}…` });
+        onProgress?.({ stage: 'probe', message: `Midiendo la fuente ${i}/${need.length}: ${host}…` });
         // eslint-disable-next-line no-await-in-loop
         const r = await measure(u, { timeoutMs: 6000 });
         this._rankCache.set(u, { at: Date.now(), ok: r.ok, speed: r.speed });
@@ -489,7 +489,7 @@ class Sources {
     if (s > 0) {
       onProgress?.({
         stage: 'probe',
-        message: `已选最快的源：${new URL(best).host}（约 ${(s / 1048576).toFixed(2)} MB/s）`,
+        message: `Fuente más rápida elegida: ${new URL(best).host} (unos ${(s / 1048576).toFixed(2)} MB/s)`,
       });
     }
     return sorted;

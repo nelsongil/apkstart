@@ -14,7 +14,7 @@ const UA = 'ApkStart/0.2 (Windows; +https://github.com/apkstart)';
 
 function openStream(url, { method = 'GET', headers = {}, redirects = 0 } = {}) {
   return new Promise((resolve, reject) => {
-    if (redirects > 6) return reject(new Error('重定向次数过多'));
+    if (redirects > 6) return reject(new Error('Demasiadas redirecciones'));
     const u = new URL(url);
     const mod = u.protocol === 'http:' ? http : https;
     const req = mod.request(url, {
@@ -30,7 +30,7 @@ function openStream(url, { method = 'GET', headers = {}, redirects = 0 } = {}) {
       resolve(res);
     });
     req.on('error', reject);
-    req.on('timeout', () => { req.destroy(new Error('连接超时')); });
+    req.on('timeout', () => { req.destroy(new Error('Se agotó el tiempo de conexión')); });
     req.end();
   });
 }
@@ -87,7 +87,7 @@ async function download(url, dest, opt = {}) {
     if (res.statusCode !== 200 && res.statusCode !== 206) {
       res.resume();
       if (attempt <= retries) { await new Promise((r) => setTimeout(r, 1500)); continue; }
-      throw new Error(`下载失败 HTTP ${res.statusCode}: ${url}`);
+      throw new Error(`Error de descarga HTTP ${res.statusCode}: ${url}`);
     }
 
     const total = res.statusCode === 206
@@ -124,12 +124,12 @@ async function download(url, dest, opt = {}) {
         if (idle) clearTimeout(idle);
         idle = setTimeout(() => {
           res.destroy();
-          finish(new Error('连接停滞（长时间无数据）'));
+          finish(new Error('Conexión estancada (sin datos durante mucho tiempo)'));
         }, idleMs);
       };
       kick();
 
-      const onAbort = () => { res.destroy(new Error('已取消')); };
+      const onAbort = () => { res.destroy(new Error('Cancelado')); };
       if (signal) signal.addEventListener('abort', onAbort, { once: true });
 
       res.on('data', (c) => {
@@ -152,7 +152,7 @@ async function download(url, dest, opt = {}) {
       ws.on('finish', () => finish());
       ws.on('error', (e) => finish(e));
       res.on('error', (e) => finish(e));
-      res.on('close', () => { if (!res.complete) finish(new Error('连接被中断')); });
+      res.on('close', () => { if (!res.complete) finish(new Error('Conexión interrumpida')); });
     });
 
     break;
@@ -166,7 +166,7 @@ async function download(url, dest, opt = {}) {
     const actual = await sha256File(dest);
     if (actual.toLowerCase() !== expectSha256.toLowerCase()) {
       fs.rmSync(dest, { force: true });
-      throw new Error(`校验失败：期望 ${expectSha256.slice(0, 12)}… 实际 ${actual.slice(0, 12)}…`);
+      throw new Error(`Verificación fallida: se esperaba ${expectSha256.slice(0, 12)}… y se obtuvo ${actual.slice(0, 12)}…`);
     }
   }
   return { file: dest, size: fs.statSync(dest).size };
@@ -246,7 +246,7 @@ async function downloadParallel(url, dest, opt = {}) {
     const res = await openStream(url, { headers: { Range: `bytes=${c.pos}-${c.end}` } });
     if (res.statusCode !== 206) {
       res.resume();
-      throw new Error(`分块请求被拒绝 HTTP ${res.statusCode}`);
+      throw new Error(`El servidor rechazó la petición del bloque HTTP ${res.statusCode}`);
     }
     await new Promise((resolve, reject) => {
       // 必须自己兜住「promise 永远不 settle」：res.destroy(err) 在某些情况下只发
@@ -258,10 +258,10 @@ async function downloadParallel(url, dest, opt = {}) {
         clearTimeout(idle);
         if (err) reject(err); else resolve();
       };
-      let idle = setTimeout(() => { res.destroy(); finish(new Error('连接停滞（长时间无数据）')); }, idleMs);
+      let idle = setTimeout(() => { res.destroy(); finish(new Error('Conexión estancada (sin datos durante mucho tiempo)')); }, idleMs);
       const kick = () => {
         clearTimeout(idle);
-        idle = setTimeout(() => { res.destroy(); finish(new Error('连接停滞（长时间无数据）')); }, idleMs);
+        idle = setTimeout(() => { res.destroy(); finish(new Error('Conexión estancada (sin datos durante mucho tiempo)')); }, idleMs);
       };
       res.on('data', (buf) => {
         try {
@@ -277,7 +277,7 @@ async function downloadParallel(url, dest, opt = {}) {
       });
       res.on('end', () => finish());
       res.on('error', (e) => finish(e));
-      res.on('close', () => finish(new Error('连接被中断')));
+      res.on('close', () => finish(new Error('Conexión interrumpida')));
     });
     return c.pos > c.end;
   };
@@ -289,10 +289,10 @@ async function downloadParallel(url, dest, opt = {}) {
           // eslint-disable-next-line no-await-in-loop
           const ok = await fetchChunk(c);
           if (ok) return;
-          throw new Error('分块未完整返回');
+          throw new Error('El bloque no se recibió completo');
         } catch (e) {
           c.tries += 1;
-          if (c.tries >= retries) throw new Error(`分块下载失败（${c.start}-${c.end}）：${e.message}`);
+          if (c.tries >= retries) throw new Error(`Error al descargar el bloque (${c.start}-${c.end}): ${e.message}`);
           // eslint-disable-next-line no-await-in-loop
           await new Promise((r) => setTimeout(r, 800 * c.tries));
         }
@@ -306,7 +306,7 @@ async function downloadParallel(url, dest, opt = {}) {
 
   const size = fs.statSync(dest).size;
   onProgress({ got: size, total: size, percent: 100, speed: 0, eta: 0 });
-  if (size !== total) throw new Error(`下载不完整：${size}/${total} 字节`);
+  if (size !== total) throw new Error(`Descarga incompleta: ${size}/${total} bytes`);
   return { file: dest, size, parallel: n };
 }
 
@@ -322,7 +322,7 @@ async function downloadAny(urls, dest, opt = {}) {
       errors.push(`${u} → ${e.message}`);
     }
   }
-  throw new Error(`所有下载源均失败：\n${errors.join('\n')}`);
+  throw new Error(`Todas las fuentes de descarga han fallado:\n${errors.join('\n')}`);
 }
 
 /**
@@ -348,7 +348,7 @@ async function downloadMulti(urls, dest, opt = {}) {
   const idleMs = Number(opt.idleMs) > 0 ? Number(opt.idleMs) : 20000;
 
   const list = [...new Set((urls || []).filter(Boolean))];
-  if (!list.length) throw new Error('没有可用的下载地址');
+  if (!list.length) throw new Error('No hay ninguna dirección de descarga disponible');
   if (list.length === 1) return downloadParallel(list[0], dest, opt);
 
   // 1) 并行探测：总大小 + 是否支持 Range
@@ -412,7 +412,7 @@ async function downloadMulti(urls, dest, opt = {}) {
     pos: i * per,
     src: i % same.length,
     tries: 0,
-    rotates: 0,   // 必须显式初始化：undefined < 2 是 false，换源永远不会触发
+    rotates: 0,   // Hay que inicializar explícitamente: undefined < 2 es false; el cambio de fuente nunca se activará
   })).filter((c) => !doneSet.has(c.start));
 
   const saveMeta = () => {
@@ -454,7 +454,7 @@ async function downloadMulti(urls, dest, opt = {}) {
     const res = await openStream(url, { headers: { Range: `bytes=${c.pos}-${c.end}` } });
     if (res.statusCode !== 206) {
       res.resume();
-      throw new Error(`分块被拒绝 HTTP ${res.statusCode}`);
+      throw new Error(`Bloque rechazado HTTP ${res.statusCode}`);
     }
     const startPos = c.pos;
     const startedAt = Date.now();
@@ -463,7 +463,7 @@ async function downloadMulti(urls, dest, opt = {}) {
     let rotated = false;
     await new Promise((resolve, reject) => {
       // 空闲看门狗 + 「保证 settle」：连接建立了但一个字节都不来（常见的
-      // 「TCP 通但被墙/被限」），光等 socket 超时要 30 秒；而 res.destroy(err)
+      // 「TCP 通但被墙/被限」），光等 socket Tiempo agotado要 30 秒；而 res.destroy(err)
       // 可能只发 close 不发 error，promise 就永远不会 reject —— 表现是一块挂死、
       // 整个下载停在那里（实测踩过）。所以看门狗自己调用 finish。
       let settled = false;
@@ -473,10 +473,10 @@ async function downloadMulti(urls, dest, opt = {}) {
         clearTimeout(idle);
         if (err) reject(err); else resolve();
       };
-      let idle = setTimeout(() => { res.destroy(); finish(new Error('连接停滞（长时间无数据）')); }, idleMs);
+      let idle = setTimeout(() => { res.destroy(); finish(new Error('Conexión estancada (sin datos durante mucho tiempo)')); }, idleMs);
       const kick = () => {
         clearTimeout(idle);
-        idle = setTimeout(() => { res.destroy(); finish(new Error('连接停滞（无数据超时）')); }, idleMs);
+        idle = setTimeout(() => { res.destroy(); finish(new Error('Conexión estancada (tiempo de espera sin datos)')); }, idleMs);
       };
       res.on('data', (buf) => {
         try {
@@ -498,13 +498,13 @@ async function downloadMulti(urls, dest, opt = {}) {
             c.rotates = (c.rotates || 0) + 1;
             // 这里不推进 c.src：换源统一由下面的 catch 做，否则一次失败会跳两个源
             res.destroy();
-            finish(new Error(`该源速度过低（${(bps / 1024).toFixed(0)} KB/s），换源重试`));
+            finish(new Error(`Esta fuente va demasiado lenta (${(bps / 1024).toFixed(0)} KB/s); probando otra`));
           }
         }
       });
       res.on('end', () => finish());
       res.on('error', (e) => finish(e));
-      res.on('close', () => finish(new Error('连接被中断')));
+      res.on('close', () => finish(new Error('Conexión interrumpida')));
     });
     return c.pos > c.end;
   };
@@ -519,13 +519,13 @@ async function downloadMulti(urls, dest, opt = {}) {
             saveMeta();
             return;
           }
-          throw new Error('分块未完整返回');
+          throw new Error('El bloque no se recibió completo');
         } catch (e) {
           c.tries += 1;
           if (c.tries >= retries) {
             // 记下已完成的部分（边车），下次从缺的块继续，而不是从头再下 1.4GB
             saveMeta();
-            throw new Error(`分块失败（${c.start}-${c.end}）：${e.message}`);
+            throw new Error(`Error en el bloque (${c.start}-${c.end}): ${e.message}`);
           }
           // 换一个源再试：一个镜像抽风不该拖垮整个下载
           c.src += 1;
@@ -543,7 +543,7 @@ async function downloadMulti(urls, dest, opt = {}) {
 
   const size = fs.statSync(dest).size;
   tick(true);
-  if (size !== total) throw new Error(`下载不完整：${size}/${total} 字节`);
+  if (size !== total) throw new Error(`Descarga incompleta: ${size}/${total} bytes`);
   return { file: dest, size, parallel: n, sources: same.length, multi: true, resumed: resume };
 }
 
@@ -559,7 +559,7 @@ async function downloadAnyParallel(urls, dest, opt = {}) {
       errors.push(`${u} → ${e.message}`);
     }
   }
-  throw new Error(`所有下载源均失败：\n${errors.join('\n')}`);
+  throw new Error(`Todas las fuentes de descarga han fallado:\n${errors.join('\n')}`);
 }
 
 module.exports = {

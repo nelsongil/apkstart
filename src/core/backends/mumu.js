@@ -1,13 +1,13 @@
 'use strict';
 /**
- * 底座：网易 MuMu 模拟器 12（玩家版 / 多开）
+ * 底座：网易 MuMu Emulador 12（玩家版 / 多开）
  *
  * 为什么选它做第一个「第三方底座」实测对象：
  *  - 官方带一个命令行管理工具 MuMuManager.exe（info / control / adb / sh / setting），
  *    端口、窗口句柄、开关机状态全部是结构化 JSON，不用猜；
  *  - 渲染窗口是标准的 Qt 顶层窗口（Qt5156QWindowIcon），和自带 emulator 同源，
  *    SetParent 嵌入这条链路是现成的；
- *  - 它自带 ARM 兼容层（红果这类 arm64-only 应用可直接跑）。
+ *  - 它自带 ARM 兼容层（红果这类 arm64-only App可直接跑）。
  *
  * 用到的 MuMuManager 子命令（都在它自己的 --help 里）：
  *   info -v <index>                       → { adb_port, main_wnd, render_wnd, pid, player_state, ... }
@@ -15,8 +15,8 @@
  *   control -v <index> show_window        → 把设备窗口显示出来
  *   control -v <index> layout_window ...  → 摆位置/尺寸
  *   control -v <index> app install -apk   → 装包
- *   control -v <index> app info -i        → 已装应用清单
- *   control -v <index> app launch -pkg    → 启动应用
+ *   control -v <index> app info -i        → 已装App清单
+ *   control -v <index> app launch -pkg    → 启动App
  *
  * 重要限制（实测，写在这里免得以后踩）：
  *  - MuMu 的多开实例之间是隔离的；这里只接管「索引 0」那一台。
@@ -91,11 +91,11 @@ function spawnSyncSafe(cmd, args) {
 class MumuBackend extends Backend {
   static get id() { return 'mumu'; }
 
-  static get label() { return 'MuMu 模拟器 12（复用已安装的网易模拟器）'; }
+  static get label() { return 'Emulador MuMu 12 (reutiliza el emulador NetEase ya instalado)'; }
 
   static get summary() {
-    return '不下载任何安卓镜像：直接驱动你电脑上已经装好的 MuMu 模拟器 12，'
-      + '把它变成 ApkStart 的运行时。自带 ARM 兼容层，冷启动约 10~20 秒。';
+    return 'No descarga ninguna imagen de Android: controla directamente el emulador MuMu 12 ya instalado en el equipo,'
+      + 'y lo convierte en el entorno de ApkStart. Incluye capa de compatibilidad ARM; el arranque en frío tarda 10-20 segundos.';
   }
 
   static get embedCapable() { return true; }
@@ -179,7 +179,7 @@ class MumuBackend extends Backend {
 
   async probe() {
     const loc = this.locate();
-    if (!loc) return { ok: true, found: false, detail: '没有找到 MuMuManager.exe' };
+    if (!loc) return { ok: true, found: false, detail: 'No se ha encontrado MuMuManager.exe' };
     const info = await this.manager(['version'], { timeout: 8000 });
     return {
       ok: true, found: true, path: loc.manager, detail: (info && info.version) || '', root: loc.root,
@@ -188,8 +188,8 @@ class MumuBackend extends Backend {
 
   async check() {
     const loc = this.locate();
-    if (!loc) return { ok: false, reason: '没有找到 MuMu 模拟器（可在设置里指定安装目录）', needs: 'mumu' };
-    if (!loc.adb) return { ok: false, reason: 'MuMu 目录里找不到 adb.exe', needs: 'mumu' };
+    if (!loc) return { ok: false, reason: 'No se ha encontrado el emulador MuMu (puedes indicar su carpeta en Ajustes)', needs: 'mumu' };
+    if (!loc.adb) return { ok: false, reason: 'No se encuentra adb.exe en la carpeta', needs: 'mumu' };
     return { ok: true, path: loc.manager };
   }
 
@@ -214,7 +214,7 @@ class MumuBackend extends Backend {
       if (Date.now() - lastNotice > 8000) {
         lastNotice = Date.now();
         const st = (info && info.player_state) || 'starting';
-        onLog(`MuMu 模拟器启动中… ${st} ${Math.round((Date.now() - t0) / 1000)}s`);
+        onLog(`MuMu Iniciando el emulador… ${st} ${Math.round((Date.now() - t0) / 1000)} s`);
       }
       // eslint-disable-next-line no-await-in-loop
       await sleep(1500);
@@ -225,16 +225,16 @@ class MumuBackend extends Backend {
   async ensure({ onLog = () => {} } = {}) {
     const loc = this.locate();
     if (!loc) {
-      return { ok: false, error: '没有找到 MuMu 模拟器。请先安装网易 MuMu 模拟器 12，或在设置里指定它的安装目录。' };
+      return { ok: false, error: 'No se ha encontrado el emulador MuMu. Instala antes MuMu 12 de NetEase o indica su carpeta en Ajustes.' };
     }
     let info = await this.info({ fresh: true });
     const wasRunning = !!(info && info.is_android_started);
     if (!wasRunning) {
-      onLog(info && info.is_process_started ? 'MuMu 模拟器正在开机…' : '正在启动 MuMu 模拟器…');
+      onLog(info && info.is_process_started ? 'El emulador está arrancando…' : 'Iniciando el emulador MuMu…');
       await this.manager(['control', 'launch', '-v', String(this.index)], { timeout: 30000 });
       this._stoppedByUs = false;
       info = await this.waitReady({ onLog });
-      if (!info) return { ok: false, error: 'MuMu 模拟器启动超时（120 秒内没有进入安卓桌面）' };
+      if (!info) return { ok: false, error: 'Se agotó el tiempo de arranque del emulador (no llegó al escritorio de Android en 120 segundos)' };
     }
     this.serial = `${info.adb_host_ip || '127.0.0.1'}:${info.adb_port}`;
     this.adbPath = loc.adb;
@@ -305,7 +305,7 @@ class MumuBackend extends Backend {
   }
 
   /**
-   * 就绪门禁。
+   * Listo门禁。
    *
    * 坑（实测）：Windows 的 SetParent 会隐式清掉子窗口的 WS_VISIBLE。
    * 如果趁 MuMu 的设备窗口还处于隐藏状态（刚开机、或被我们藏起来过）就 SetParent，
@@ -333,8 +333,8 @@ class MumuBackend extends Backend {
     const info = this._info;
     return {
       total: info && info.disk_size_bytes ? info.disk_size_bytes : 0,
-      items: [{ label: 'MuMu 实例磁盘', bytes: info && info.disk_size_bytes ? info.disk_size_bytes : 0 }],
-      note: 'MuMu 的镜像由模拟器自己管理，apkstart 不下载、不清理，卸载应用请用 MuMu 自带界面。',
+      items: [{ label: 'Disco de la instancia', bytes: info && info.disk_size_bytes ? info.disk_size_bytes : 0 }],
+      note: 'La imagen la gestiona el propio emulador; apkstart no la descarga ni la limpia. Para desinstalar apps usa la interfaz de MuMu.',
     };
   }
 
@@ -343,12 +343,12 @@ class MumuBackend extends Backend {
     return {
       ok: !!(info && info.disk_size_bytes),
       dataMB: info && info.disk_size_bytes ? Math.round(info.disk_size_bytes / (1024 * 1024)) : 0,
-      note: '数据分区由 MuMu 管理，改大小请在 MuMu 设置里操作。',
+      note: 'La partición de datos la gestiona MuMu; cambia el tamaño en los ajustes de MuMu.',
     };
   }
 
   dispose() {
-    // 绝不因为 ApkStart 退出就关掉用户的模拟器
+    // 绝不因为 ApkStart 退出就关掉用户的Emulador
   }
 
   diagnose() {

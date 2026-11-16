@@ -2,9 +2,9 @@
 /**
  * 安卓通知 → Windows 原生通知。
  *
- * 模拟器没有把通知接到 Windows 上，这里按 2.5 秒轮询 `dumpsys notification`（只读、低开销），
+ * Emulador没有把通知接到 Windows 上，这里按 2.5 秒轮询 `dumpsys notification`（只读、低开销），
  * 解析出「新出现的通知」再用 Electron 的 Notification 走系统通知中心 / 操作中心。
- * 点通知直接回到对应的应用窗口。
+ * 点通知直接回到对应的App窗口。
  */
 const { Notification, nativeImage } = require('electron');
 
@@ -112,24 +112,24 @@ class NotifyBridge {
       // 防内存增长：只在最近 500 条里做去重
       if (this.seen.size > 500) this.seen = new Set([...this.seen].slice(-300));
       for (const n of fresh) this._show(n);
-    } catch (_) { /* 运行时未就绪时忽略 */ }
+    } catch (_) { /* Entorno no listo时忽略 */ }
   }
 
   _show(n) {
     try {
       if (!Notification.isSupported()) return;
       const label = this.getAppLabel ? this.getAppLabel(n.pkg) : n.pkg;
-      const body = [n.title, n.text].filter(Boolean).join(' · ') || '新通知';
+      const body = [n.title, n.text].filter(Boolean).join(' · ') || 'Nueva notificación';
       const iconPath = this.getAppIcon ? this.getAppIcon(n.pkg) : '';
       const note = new Notification({
-        title: label || '安卓应用',
+        title: label || 'App de Android',
         body: body.slice(0, 260),
         silent: false,
         icon: iconPath ? nativeImage.createFromPath(iconPath) : undefined,
       });
       note.on('click', () => { if (this.onOpen) this.onOpen(n.pkg); });
       note.show();
-    } catch (_) { /* 通知失败不影响应用 */ }
+    } catch (_) { /* 通知失败不影响App */ }
   }
 }
 

@@ -2,7 +2,7 @@
 /**
  * 运行时自举（Provisioning）
  *
- * ApkStart 不依赖任何第三方模拟器：adb、QEMU、系统镜像全部由自己下载/校验/管理。
+ * ApkStart 不依赖任何第三方Emulador：adb、QEMU、系统镜像全部由自己下载/校验/管理。
  * 所有运行时文件都放在 %APPDATA%\apkstart\runtime 下，保证在任何安装位置都可写。
  */
 const fs = require('fs');
@@ -83,10 +83,10 @@ function absUrl(u, base = REPO_BASE) {
 /**
  * 只保留一份「通用基础镜像」。
  * 旧版默认 AOSP API30 + 可选 API34 Play 兼容镜像，导致：
- *   - 用户装国产 ARM 应用时必然失败，还要手动切镜像（实用门槛）；
+ *   - 用户装国产 ARM App时必然失败，还要手动切镜像（实用门槛）；
  *   - 两份镜像各 0.6~3GB，运行时目录动辄十几 GB；
- *   - 切换镜像要 wipe-data，已装应用全丢。
- * 现在统一为 Android 14 Google Play x86_64：x86 应用、ARM 应用、GMS 都能跑，
+ *   - 切换镜像要 wipe-data，已装App全丢。
+ * 现在统一为 Android 14 Google Play x86_64：x86 App、ARM App、GMS 都能跑，
  * 全机只存一份只读基础层（容器式共享），按需下载一次即可。
  */
 const PLAY_SYSIMG = { api: '34', tag: 'google_apis_playstore', abi: 'x86_64' };
@@ -118,9 +118,9 @@ function fileSize(p) {
  * 环境探测结果的落盘缓存。
  *
  * `emulator -version` 与 `emulator -accel-check` 每次都要新起一个 emulator 进程，
- * 在 Windows 上实测 1~3 秒；而这两项在「引擎/驱动没变」时结果恒定。
- * 以前只在内存里缓存 30 秒，等于每次冷启动都要重付一遍，而且这几秒正好卡在
- * 用户点开应用的那一刻。这里按「exe 大小+修改时间 + AEHD 驱动时间 + WHPX 组件」
+ * 在 Windows 上实测 1~3 秒；而这两项在「Motor/驱动没变」时结果恒定。
+ * 以前只在内存里缓存 30 秒，等于每次Arranque en frío都要重付一遍，而且这几秒正好卡在
+ * 用户点开App的那一刻。这里按「exe 大小+修改时间 + AEHD 驱动时间 + WHPX 组件」
  * 做指纹落到 %APPDATA%，软硬件一换自动失效。
  */
 const ENV_CACHE_TTL = 6 * 60 * 60 * 1000;
@@ -150,7 +150,7 @@ class Provisioner {
     return this._sources;
   }
 
-  /** 缓存指纹：引擎文件与加速驱动任一变化就换 key */
+  /** 缓存指纹：Motor文件与加速驱动任一变化就换 key */
   _envKey(exe) {
     const aehd = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'drivers', 'aehd.sys');
     return [
@@ -199,8 +199,8 @@ class Provisioner {
     const sysTag = DEFAULT_SYSIMG.tag;
     const sysApi = DEFAULT_SYSIMG.api;
     const sysAbi = DEFAULT_SYSIMG.abi;
-    // AVD（含用户数据、已装应用、quickboot 快照）必须落在可写且不会被清理的地方。
-    // 单文件发行版的运行时是随包解压到临时目录的，把 AVD 放进去等于每次退出都丢应用。
+    // AVD（含用户数据、已装App、quickboot 快照）必须落在可写且不会被清理的地方。
+    // 单文件发行版的运行时是随包解压到临时目录的，把 AVD 放进去等于每次退出都丢App。
     // 只要运行时目录不在 %APPDATA% 里，就把 AVD 固定指到用户数据目录。
     // 另外：允许在设置里单独指定「安卓数据目录」——它才是真正吃盘的地方
     // （6~24GB 数据分区 + 2~3GB 快照），只挪运行时、不挪它，C 盘一样会满。
@@ -255,7 +255,7 @@ class Provisioner {
   /**
    * 磁盘守卫：在下载 / 解压一份大体积组件之前，先确认目标盘有足够可用空间。
    * 否则会下到一半把系统盘撑爆，或解压阶段直接失败（且残留半截文件）。
-   * 预留 1GB 缓冲：模拟器/镜像解压后还有快照、用户数据分区会持续膨胀。
+   * 预留 1GB 缓冲：Emulador/镜像解压后还有快照、用户数据分区会持续膨胀。
    * @param {string} component 组件名（决定所需空间估算）
    * @param {string} targetDir 写入目录（据此定位所在盘）
    */
@@ -270,9 +270,9 @@ class Provisioner {
     const free = doctor.freeDiskMB(dir);
     if (free && free < need + buf) {
       throw new Error(
-        `目标磁盘空间不足：该组件约需 ${need + buf} MB，但「${dir}」所在盘仅剩 ${free} MB。\n`
-        + '建议：把「运行时数据目录」改到空间更大的盘（设置 → 系统集成 → 运行时数据目录 → 浏览），'
-        + '或先清理磁盘 / 卸载不用的应用后再试。',
+        `Poco espacio en el disco de destino: este componente necesita unos ${need + buf} MB, pero en la unidad de «${dir}» solo quedan ${free} MB.\n`
+        + 'Sugerencia: cambia la «Carpeta de datos del entorno» a una unidad con más espacio (Ajustes → Integración con el sistema → Carpeta de datos del entorno → Examinar),'
+        + 'o libera espacio / desinstala apps que no uses y vuelve a intentarlo.',
       );
     }
     return free;
@@ -282,17 +282,17 @@ class Provisioner {
 
   async hypervisor() {
     if (this._hypervisor !== null) return this._hypervisor;
-    if (!IS_WIN) { this._hypervisor = { whpx: false, note: '非 Windows 平台' }; return this._hypervisor; }
+    if (!IS_WIN) { this._hypervisor = { whpx: false, note: 'Plataforma distinta de Windows' }; return this._hypervisor; }
     // 只做毫秒级的文件检查。真正"WHPX 是否可用"由 emulator -accel-check 给出权威答案，
-    // 避免在这里拉起 PowerShell（冷启动 1-2 秒）拖慢每次状态轮询。
+    // 避免在这里拉起 PowerShell（Arranque en frío 1-2 秒）拖慢每次状态轮询。
     const dll = fs.existsSync('C:\\Windows\\System32\\WinHvPlatform.dll');
     this._hypervisor = {
-      whpx: false,          // 由 emulatorAccel() 覆盖为真实值
+      whpx: false,          // emulatorAccel() lo sustituye por el valor real
       dll,
       hypervisorPresent: false,
       note: dll
-        ? '虚拟机平台组件存在（可用性由运行时引擎检测）'
-        : '未检测到 Windows Hypervisor Platform 组件：可在「启用或关闭 Windows 功能」中勾选「虚拟机平台」后重启',
+        ? 'El componente «Plataforma de máquina virtual» está presente (la disponibilidad la comprueba el motor del entorno)'
+        : 'No se ha detectado el componente Windows Hypervisor Platform: marca «Plataforma de máquina virtual» en «Activar o desactivar las características de Windows» y reinicia',
     };
     return this._hypervisor;
   }
@@ -322,7 +322,7 @@ class Provisioner {
     const candidates = [
       p.qemuExe,
       store.getSettings().runtime.qemuPath,
-      'C:\\Program Files\\qemu\\qemu-system-x86_64.exe',   // winget 默认安装位置
+      'C:\\Program Files\\qemu\\qemu-system-x86_64.exe',   // winget Ubicación de instalación por defecto
       path.join(this.appRoot, 'engine', 'qemu', 'qemu-system-x86_64.exe'),
     ].filter(Boolean);
     for (const c of candidates) {
@@ -342,7 +342,7 @@ class Provisioner {
   /** 校验 ISO9660 主卷描述符（偏移 0x8001 处的 "CD001"），防止把错误页/半截文件当镜像 */
   inspectIso(file) {
     const size = fileSize(file);
-    if (!size) return { ok: false, iso9660: false, size: 0, reason: '未下载' };
+    if (!size) return { ok: false, iso9660: false, size: 0, reason: 'No descargada' };
     let magic = '';
     try {
       const fd = fs.openSync(file, 'r');
@@ -360,8 +360,8 @@ class Provisioner {
     let reason = '';
     if (!ok) {
       reason = size <= MIN_SIZE.iso
-        ? `文件只有 ${(size / 1048576).toFixed(1)}MB，下载未完成`
-        : '文件不是有效的 ISO9660 镜像（可能是下载到错误页或文件已损坏）';
+        ? `El archivo solo tiene ${(size / 1048576).toFixed(1)} MB; la descarga no terminó`
+        : 'El archivo no es una imagen ISO9660 válida (puede que se descargara una página de error o que esté dañado)';
     }
     return { ok, iso9660, rawImage, size, reason, magic };
   }
@@ -388,7 +388,7 @@ class Provisioner {
 
     return {
       adb: { ...adb, required: true },
-      emulator: { ...emulator, required: true, note: emulator.ok ? emulator.version : '未安装' },
+      emulator: { ...emulator, required: true, note: emulator.ok ? emulator.version : 'No instalado' },
       sysimg: {
         ok: sysimg.ok || compatReady,
         dir: sysimg.dir,
@@ -397,7 +397,7 @@ class Provisioner {
         required: false,
         note: sysimg.ok
           ? `Android ${sysimg.api}（${(sysimg.size / 1073741824).toFixed(2)} GB）`
-          : (compatReady ? `Android ${PLAY_SYSIMG.api}（ARM 兼容镜像）` : (sysimg.note || '未下载')),
+          : (compatReady ? `Android ${PLAY_SYSIMG.api}（ARM imagen compatible)` : (sysimg.note || 'No descargada')),
       },
       playImage: this.playImageInfo(),
       accel,
@@ -408,7 +408,7 @@ class Provisioner {
         size: iso.size,
         iso9660: iso.iso9660,
         required: false,
-        note: iso.size ? `${(iso.size / 1073741824).toFixed(2)} GB` : '未下载',
+        note: iso.size ? `${(iso.size / 1073741824).toFixed(2)} GB` : 'No descargada',
         reason: iso.reason,
       },
       disk: {
@@ -416,7 +416,7 @@ class Provisioner {
         path: diskPath,
         size: diskSize,
         required: false,
-        note: diskSize ? `${(diskSize / 1073741824).toFixed(2)} GB` : '尚未创建',
+        note: diskSize ? `${(diskSize / 1073741824).toFixed(2)} GB` : 'Sin crear',
       },
       hypervisor: hv,
       ready: !!(adb.ok && (emulatorReady || qemuReady)),
@@ -431,29 +431,29 @@ class Provisioner {
     const p = this.ensureDirs();
     await this.guardDisk('adb', p.root);
     const zipPath = path.join(p.tmp, 'platform-tools.zip');
-    onProgress({ stage: 'download', message: '下载 Android platform-tools（约 8MB）…', percent: 2 });
+    onProgress({ stage: 'download', message: 'Descargando Android platform-tools (unos 8 MB)…', percent: 2 });
 
     await downloadAny(SOURCES.adb, zipPath, {
       onProgress: (pr) => onProgress({
         stage: 'download',
-        message: `下载 adb… ${(pr.got / 1048576).toFixed(1)}MB / ${(pr.total / 1048576).toFixed(1)}MB`,
+        message: `Descargando adb… ${(pr.got / 1048576).toFixed(1)} MB / ${(pr.total / 1048576).toFixed(1)} MB`,
         percent: pr.percent,
         speed: pr.speed,
       }),
     });
 
-    if (fileSize(zipPath) < MIN_SIZE.adb) throw new Error('adb 安装包下载不完整');
+    if (fileSize(zipPath) < MIN_SIZE.adb) throw new Error('adb La descarga del paquete está incompleta');
 
-    onProgress({ stage: 'extract', message: '解压 adb…', percent: 92 });
+    onProgress({ stage: 'extract', message: 'Extrayendo adb…', percent: 92 });
     await this.extractZip(zipPath, p.root);
 
     const v = await this.adbVersion();
-    if (!v.ok) throw new Error('adb 解压后无法运行，请检查是否被杀毒软件拦截');
+    if (!v.ok) throw new Error('adb No se puede ejecutar tras extraerlo; comprueba si lo bloquea el antivirus');
 
     fs.rmSync(zipPath, { force: true });
     store.saveSettings({ adbPath: v.path });
     this._cache.adbVersion = v.version;
-    onProgress({ stage: 'done', message: `adb ${v.version} 就绪`, percent: 100 });
+    onProgress({ stage: 'done', message: `adb ${v.version} Listo`, percent: 100 });
     return v;
   }
 
@@ -509,8 +509,8 @@ class Provisioner {
       }
     }
     if (!cands.length) {
-      const errs = lists.filter((x) => !x.list).map((x) => `${x.name} 不可达`).join('、');
-      throw new Error(`两个源上都没有运行时整包${errs ? `（${errs}）` : ''}`);
+      const errs = lists.filter((x) => !x.list).map((x) => `${x.name} no responde`).join('、');
+      throw new Error(`No hay un paquete completo del entorno en ninguna de las dos fuentes${errs ? `（${errs}）` : ''}`);
     }
     cands.sort((a, b) => cmpVer(b.tag, a.tag));
     this._cache.pack = cands[0];
@@ -524,7 +524,7 @@ class Provisioner {
   async installRuntimePack(onProgress = () => {}) {
     const p = this.ensureDirs();
     // 先给一条进度：找版本 + 测速这一段没有字节数，不给提示用户会以为「卡死了」。
-    onProgress({ stage: 'download', message: '正在获取运行时版本信息…', percent: 1 });
+    onProgress({ stage: 'download', message: 'Obteniendo la información de versión del entorno…', percent: 1 });
     const pack = await this.resolveRuntimePack();
     await this.guardDisk('runtime', p.root);
     const zip = path.join(p.tmp, 'runtime-pack.zip');
@@ -532,14 +532,14 @@ class Provisioner {
     const s = store.getSettings().runtime || {};
     const conn = Math.max(1, Math.min(16, Number(s.downloadConnections) || 8));
 
-    onProgress({ stage: 'download', message: `正在挑选最快的下载源（${pack.from || 'GitHub'} · ${pack.tag}）…`, percent: 1 });
+    onProgress({ stage: 'download', message: `Eligiendo la fuente de descarga más rápida (${pack.from || 'GitHub'} · ${pack.tag}）…`, percent: 1 });
     // 候选 = 源站 + 镜像前缀。先各下一个 128KB 实测速度再决定用哪个：
     // 「按域名猜」在实测里经常错 —— 同一个地址上午 30KB/s、晚上 5MB/s。
     const urls = await this.sources
       .rank(this._downloadUrls(pack.url), { onProgress: (pp) => onProgress({ stage: 'download', message: pp.message, percent: 1 }) })
       .catch(() => this._downloadUrls(pack.url));
 
-    onProgress({ stage: 'download', message: `下载运行时（约 1.5 GB，只需一次，${conn} 线程）…`, percent: 2 });
+    onProgress({ stage: 'download', message: `Descargando el entorno (unos 1,5 GB, solo una vez, ${conn} hilos)…`, percent: 2 });
     // 分块并行（8 线程）比单流快得多：GitHub 对单连接限速很常见，单流实测只有
     // 一两百 KB/s，8 线程能跑满本地带宽。中途断掉会退回单流续传。
     await downloadMulti(urls, zip, {
@@ -548,22 +548,22 @@ class Provisioner {
         const pct = pr.percent != null ? pr.percent : (total ? Math.round((pr.got / total) * 100) : 0);
         const mb = `${(pr.got / 1048576).toFixed(1)} MB${total ? ` / ${(total / 1048576).toFixed(1)} MB` : ''}`;
         const sp = Number(pr.speed) > 0 ? ` · ${(pr.speed / 1048576).toFixed(2)} MB/s` : '';
-        const eta = Number(pr.eta) > 0 ? ` · 剩余约 ${Math.ceil(pr.eta / 60)} 分钟` : '';
+        const eta = Number(pr.eta) > 0 ? ` · Quedan unos ${Math.ceil(pr.eta / 60)} minutos` : '';
         onProgress({
           stage: 'download',
-          message: `下载运行时 ${mb}${sp}${eta}`,
+          message: `Descargando el entorno ${mb}${sp}${eta}`,
           percent: Math.max(1, Math.min(90, Math.round(pct * 0.9))),
           speed: pr.speed,
         });
       },
     });
-    if (fileSize(zip) < 200 * 1024 * 1024) throw new Error('运行时整包下载不完整，可重试续传');
+    if (fileSize(zip) < 200 * 1024 * 1024) throw new Error('La descarga del paquete del entorno quedó incompleta; puedes reanudarla');
 
-    onProgress({ stage: 'extract', message: '解压运行时（约 1 分钟）…', percent: 91 });
+    onProgress({ stage: 'extract', message: 'Extrayendo el entorno (unos 1 minuto)…', percent: 91 });
     await this.extractZip(zip, p.root, {
       onEntry: (name, done, all) => {
         if (done % 50 === 0) {
-          onProgress({ stage: 'extract', percent: Math.min(99, 91 + Math.round((done / all) * 8)), message: `解压 ${done}/${all}` });
+          onProgress({ stage: 'extract', percent: Math.min(99, 91 + Math.round((done / all) * 8)), message: `Extrayendo ${done}/${all}` });
         }
       },
     });
@@ -578,10 +578,10 @@ class Provisioner {
     // 否则紧接着 checkEnv() 会认为「没装系统镜像」，又去 Google 下一套 1.4 GB。
     // 展开失败必须让部署失败并带上原因：旧版这里 catch 成 0，用户看到进度
     // 停在 99% 之后又跳回「改用官方源补齐」，白下一套 1.4GB。
-    onProgress({ stage: 'extract', message: '展开系统镜像（约 1 分钟，只需一次）…', percent: 99 });
+    onProgress({ stage: 'extract', message: 'Extrayendo la imagen del sistema (unos 1 minuto, solo una vez)…', percent: 99 });
     await this.materializeImages((m) => onProgress({ stage: 'extract', message: m, percent: 99 }));
 
-    onProgress({ stage: 'done', message: '运行时已就绪', percent: 100 });
+    onProgress({ stage: 'done', message: 'Entorno listo', percent: 100 });
     return { ok: true, name: pack.name, tag: pack.tag };
   }
 
@@ -698,7 +698,7 @@ class Provisioner {
     const candidates = [p.emulatorExe, path.join(this.appRoot, 'engine', 'emulator', 'emulator.exe')];
     for (const c of candidates) {
       if (!fs.existsSync(c)) continue;
-      // 上一次会话探测过、且引擎文件没变：直接用落盘结果（省掉一次 1s+ 的进程拉起）
+      // 上一次会话探测过、且Motor文件没变：直接用落盘结果（省掉一次 1s+ 的进程拉起）
       const cached = this.envCacheGet(c);
       if (cached && cached.version && cached.version.ok && Date.now() - (cached.at || 0) < ENV_CACHE_TTL) {
         this._cache.emulatorVersion = cached.version;
@@ -721,7 +721,7 @@ class Provisioner {
 
   /**
    * 首次启动把随包带来的压缩镜像展开到用户目录（只做一次）。
-   * 单文件发行版里 system.img 是 .gz（3.1GB→580MB 左右），不展开模拟器没法用。
+   * 单文件发行版里 system.img 是 .gz（3.1GB→580MB 左右），不展开Emulador没法用。
    * 展开到 %APPDATA% 而不是包里：便携版的运行时目录每次启动都是新的临时目录，
    * 放进去等于每次开机都重解压一遍。
    */
@@ -754,7 +754,7 @@ class Provisioner {
     jobs.push(...found.values());
     if (!jobs.length && !copies.length) return 0;
 
-    // 先补齐非镜像文件（模拟器靠 kernel-ranchu 等定位/引导，缺了会报"还差系统镜像"）
+    // 先补齐非镜像文件（Emulador靠 kernel-ranchu 等定位/引导，缺了会报"还差系统镜像"）
     for (const c of copies) {
       try {
         if (path.resolve(c.src) === path.resolve(c.dest)) continue;   // 原地展开，无需复制
@@ -762,7 +762,7 @@ class Provisioner {
         if (have > 0 && have === fileSize(c.src)) continue;
         fs.mkdirSync(path.dirname(c.dest), { recursive: true });
         fs.copyFileSync(c.src, c.dest);
-      } catch (e) { onLog(`复制镜像组件失败：${e.message}`); }
+      } catch (e) { onLog(`Error al copiar los componentes de la imagen: ${e.message}`); }
     }
 
     let done = 0;
@@ -780,7 +780,7 @@ class Provisioner {
       const part = `${j.dest}.part`;
       try { fs.rmSync(part, { force: true }); } catch (_) { /* ignore */ }
       fs.mkdirSync(path.dirname(j.dest), { recursive: true });
-      onLog(`首次启动：正在展开系统镜像 ${path.basename(j.dest)}（约 1 分钟，只需一次）`);
+      onLog(`Primer arranque: extrayendo la imagen del sistema ${path.basename(j.dest)} (unos 1 minuto, solo una vez)`);
       try {
         // eslint-disable-next-line no-await-in-loop
         await new Promise((resolve, reject) => {
@@ -812,11 +812,11 @@ class Provisioner {
         // 不能再静默吞掉：调用方（一键部署 / 开机）必须知道镜像没展开成功，
         // 否则会「用官方源再下一套 1.4GB」或者直接开机失败。
         failures.push(`${path.basename(j.dest)}: ${e.message}`);
-        onLog(`展开镜像失败：${e.message}`);
+        onLog(`Error al extraer la imagen: ${e.message}`);
       }
     }
     if (failures.length) {
-      const err = new Error(`系统镜像展开失败（${failures.join('；')}）`);
+      const err = new Error(`Error al extraer la imagen del sistema (${failures.join('；')}）`);
       err.code = 'MATERIALIZE_FAILED';
       err.failed = failures;
       throw err;
@@ -830,7 +830,7 @@ class Provisioner {
     const roots = [p.sysImgRoot, path.join(this.root, 'system-images'), path.join(this.appRoot, 'engine', 'system-images')];
     // 先在默认位置（API34 Play）找，再退到「随便哪套镜像」。
     // 单文件发行版可能只带一套更小的 AOSP 镜像，写死 API34 会导致
-    // 镜像明明在包里却报"未下载"，用户被迫联网下载一套新的。
+    // 镜像明明在包里却报"No descargada"，用户被迫联网下载一套新的。
     const preferred = [p.sysImgDir,
       path.join(this.appRoot, 'engine', 'system-images',
         `android-${DEFAULT_SYSIMG.api}`, DEFAULT_SYSIMG.tag, DEFAULT_SYSIMG.abi)];
@@ -862,15 +862,15 @@ class Provisioner {
         return { ok: true, dir, size, api, tag, abi };
       }
       if (!missing && fs.existsSync(dir)) {
-        missing = { ok: false, dir, size, api, tag, abi, note: size ? '镜像不完整' : '缺少 system.img' };
+        missing = { ok: false, dir, size, api, tag, abi, note: size ? 'La imagen está incompleta' : 'Falta system.img' };
       }
     }
     if (missing) return missing;
-    return { ok: false, dir: p.sysImgDir, size: 0, api: DEFAULT_SYSIMG.api, tag: DEFAULT_SYSIMG.tag, note: '未下载' };
+    return { ok: false, dir: p.sysImgDir, size: 0, api: DEFAULT_SYSIMG.api, tag: DEFAULT_SYSIMG.tag, note: 'No descargada' };
   }
 
   /**
-   * 硬件加速状态。
+   * Aceleración por hardware状态。
    * emulator 在 Windows 上支持两种加速：WHPX（系统功能，需重启）与 AEHD（Google 自家驱动，装完即用）。
    */
   async emulatorAccel() {
@@ -881,9 +881,9 @@ class Provisioner {
     const p = this.paths();
     const exe = fs.existsSync(p.emulatorExe) ? p.emulatorExe
       : path.join(this.appRoot, 'engine', 'emulator', 'emulator.exe');
-    if (!fs.existsSync(exe)) return { ok: false, kind: 'none', note: '未安装 emulator' };
+    if (!fs.existsSync(exe)) return { ok: false, kind: 'none', note: 'emulator no instalado' };
 
-    // 落盘缓存：冷启动时不再为这一项拉起 emulator 进程。
+    // 落盘缓存：Arranque en frío时不再为这一项拉起 emulator 进程。
     // 「不可用」结论只信 10 分钟 —— 用户可能刚去开了虚拟化/装了 AEHD，要能立刻反映。
     const cached = this.envCacheGet(exe);
     if (cached && cached.accel) {
@@ -906,16 +906,16 @@ class Provisioner {
     let result;
     if (usable) {
       const kind = hasAehdFile && /aehd/i.test(text) ? 'aehd' : 'whpx';
-      result = { ok: true, kind, note: kind === 'whpx' ? 'WHPX 硬件加速已启用' : 'AEHD 硬件加速已启用' };
+      result = { ok: true, kind, note: kind === 'whpx' ? 'WHPX Aceleración por hardware activada' : 'AEHD Aceleración por hardware activada' };
     } else if (/can't find the emulator-check|corrupted tools installation/i.test(text) && hasAehdFile) {
       // 部分精简运行时包会漏掉 emulator-check.exe，导致 -accel-check 无法给出结论。
       // 此时只要 AEHD 驱动已安装，就按「可用」处理：启动时 emulator 自己会挂载驱动，
-      // 避免被误判成无加速而强行 -accel off（软件模拟在部分机器上会直接崩溃）。
-      result = { ok: true, kind: 'aehd', note: 'AEHD 硬件加速已启用（emulator-check 缺失，按驱动判定）' };
+      // 避免被误判成无加速而强行 -accel off（Emulación por software在部分机器上会直接崩溃）。
+      result = { ok: true, kind: 'aehd', note: 'AEHD Aceleración por hardware activada (falta emulator-check; se determina por el controlador)' };
     } else if (hasAehdFile && /aehd/i.test(text) && !/ERROR_ACCESS_DENIED/i.test(text)) {
-      result = { ok: true, kind: 'aehd', note: 'AEHD 硬件加速已启用' };
+      result = { ok: true, kind: 'aehd', note: 'AEHD Aceleración por hardware activada' };
     } else if (hv.dll && /whpx/i.test(text) && !/error|denied/i.test(text)) {
-      result = { ok: true, kind: 'whpx', note: 'WHPX 硬件加速已启用' };
+      result = { ok: true, kind: 'whpx', note: 'WHPX Aceleración por hardware activada' };
     } else {
       result = {
         ok: false,
@@ -923,7 +923,7 @@ class Provisioner {
         whpx: hv.whpx,
         aehdInstalled: hasAehdFile,
         viaTcg: true,
-        note: '未启用硬件加速：将回退软件模拟（能跑但很慢）。建议安装 AEHD 驱动或开启「虚拟机平台」',
+        note: 'Aceleración por hardware no activada: se usará emulación por software (funciona, pero muy lenta). Se recomienda instalar el controlador AEHD o activar «Plataforma de máquina virtual»',
       };
     }
     this._cache.accel = result;
@@ -938,22 +938,22 @@ class Provisioner {
     await this.guardDisk('emulator', p.root);
     const url = await this.resolveEmulatorUrl();
     const zip = path.join(p.tmp, 'emulator.zip');
-    onProgress({ stage: 'download', message: '下载运行时引擎（约 440MB，走 Google 官方源）…', percent: 1 });
+    onProgress({ stage: 'download', message: 'Descargando el motor del entorno (unos 440 MB, desde la fuente oficial de Google)…', percent: 1 });
 
     await downloadAnyParallel(this._downloadUrls(url), zip, {
       connections: 8,
       minChunk: 4 * 1024 * 1024,
       onProgress: (pr) => onProgress({
         stage: 'download',
-        message: `下载运行时引擎 ${(pr.got / 1048576).toFixed(0)}MB / ${(pr.total / 1048576).toFixed(0)}MB`
+        message: `Descargando el motor del entorno ${(pr.got / 1048576).toFixed(0)} MB / ${(pr.total / 1048576).toFixed(0)} MB`
           + (pr.speed ? `（${(pr.speed / 1048576).toFixed(1)} MB/s）` : ''),
         percent: Math.round(pr.percent * 0.85),
         canResume: true,
       }),
     });
-    if (fileSize(zip) < MIN_SIZE.emulator) throw new Error('运行时引擎下载不完整，可重试续传');
+    if (fileSize(zip) < MIN_SIZE.emulator) throw new Error('La descarga del motor quedó incompleta; puedes reanudarla');
 
-    onProgress({ stage: 'extract', message: '解压运行时引擎…', percent: 88 });
+    onProgress({ stage: 'extract', message: 'Extrayendo el motor del entorno…', percent: 88 });
     await this.extractZip(zip, p.root);
     fs.rmSync(zip, { force: true });
 
@@ -961,9 +961,9 @@ class Provisioner {
     this.ensurePlatformTools();
 
     const v = await this.emulatorVersion();
-    if (!v.ok) throw new Error('emulator 解压后无法运行，请检查是否被杀毒软件拦截');
+    if (!v.ok) throw new Error('emulator No se puede ejecutar tras extraerlo; comprueba si lo bloquea el antivirus');
     this._cache.emulatorVersion = v.version;
-    onProgress({ stage: 'done', message: `运行时引擎 ${v.version} 就绪`, percent: 100 });
+    onProgress({ stage: 'done', message: `Motor del entorno ${v.version} listo`, percent: 100 });
     return v;
   }
 
@@ -1007,7 +1007,7 @@ class Provisioner {
     if (size > MIN_SIZE.sysimg && fs.existsSync(path.join(dir, 'kernel-ranchu'))) {
       return { ok: true, dir, size, api: PLAY_SYSIMG.api, tag: PLAY_SYSIMG.tag };
     }
-    return { ok: false, dir, size, note: size ? '镜像不完整' : '未下载' };
+    return { ok: false, dir, size, note: size ? 'La imagen está incompleta' : 'No descargada' };
   }
 
   /** 解析 Google Play 版镜像地址（<url> 相对索引文件所在目录） */
@@ -1037,40 +1037,40 @@ class Provisioner {
     await this.guardDisk('playimg', p.sysImgRoot);
     const url = await this.resolvePlayUrl();
     const zip = path.join(p.tmp, 'play-sysimg.zip');
-    onProgress({ stage: 'download', message: '下载 ARM 兼容镜像（Android 14，约 1.5GB）…', percent: 1 });
+    onProgress({ stage: 'download', message: 'Descargando la imagen compatible ARM (Android 14, unos 1,5 GB)…', percent: 1 });
     await downloadAnyParallel(this._downloadUrls(url), zip, {
       connections: 8,
       minChunk: 4 * 1024 * 1024,
       onProgress: (pr) => onProgress({
         stage: 'download',
-        message: `下载兼容镜像 ${(pr.got / 1048576).toFixed(0)}MB / ${(pr.total / 1048576).toFixed(0)}MB`
+        message: `Descargando la imagen compatible ${(pr.got / 1048576).toFixed(0)} MB / ${(pr.total / 1048576).toFixed(0)} MB`
           + (pr.speed ? `（${(pr.speed / 1048576).toFixed(1)} MB/s）` : ''),
         percent: Math.round(pr.percent * 0.8),
         canResume: true,
       }),
     });
-    if (fileSize(zip) < MIN_SIZE.sysimg) throw new Error('兼容镜像下载不完整，可重试续传');
+    if (fileSize(zip) < MIN_SIZE.sysimg) throw new Error('La descarga de la imagen compatible quedó incompleta; puedes reanudarla');
 
     const dest = path.join(p.sysImgRoot, `android-${PLAY_SYSIMG.api}`, PLAY_SYSIMG.tag);
     fs.mkdirSync(dest, { recursive: true });
-    onProgress({ stage: 'extract', message: '解压兼容镜像（3GB，需十余秒）…', percent: 82 });
+    onProgress({ stage: 'extract', message: 'Extrayendo la imagen compatible (3 GB, unos segundos)…', percent: 82 });
     await this.extractZip(zip, dest, {
       onEntry: (_n, i, total) => onProgress({
         stage: 'extract',
-        message: `解压兼容镜像 ${i}/${total}`,
+        message: `Extrayendo la imagen compatible ${i}/${total}`,
         percent: 82 + Math.round((i / Math.max(1, total)) * 15),
       }),
     });
     fs.rmSync(zip, { force: true });
 
     const info = this.playImageInfo();
-    if (!info.ok) throw new Error('兼容镜像解压后校验失败');
+    if (!info.ok) throw new Error('La verificación de la imagen compatible falló tras extraerla');
     // 旧版（API 30）兼容镜像不再使用，成功装好后清理腾空间
     for (const old of ['android-30']) {
       const legacy = path.join(p.sysImgRoot, old, 'google_apis_playstore');
       if (fs.existsSync(legacy)) fs.rmSync(legacy, { recursive: true, force: true });
     }
-    onProgress({ stage: 'done', message: 'ARM 兼容镜像就绪，重新启动运行时即可生效', percent: 100 });
+    onProgress({ stage: 'done', message: 'ARM Imagen compatible lista; reinicia el entorno para aplicarla', percent: 100 });
     return info;
   }
 
@@ -1079,16 +1079,16 @@ class Provisioner {
     const p = this.ensureDirs();
     await this.guardDisk('aehd', p.aehdDir);
     const zip = path.join(p.tmp, 'aehd.zip');
-    onProgress({ stage: 'download', message: '下载 AEHD 驱动…', percent: 10 });
+    onProgress({ stage: 'download', message: 'Descargando el controlador AEHD…', percent: 10 });
     await downloadAnyParallel(this._downloadUrls(SOURCES.aehdFallback), zip, { connections: 2 });
     fs.mkdirSync(p.aehdDir, { recursive: true });
     await this.extractZip(zip, p.aehdDir);
     fs.rmSync(zip, { force: true });
     const has = fs.existsSync(path.join(p.aehdDir, 'aehd.Sys')) || fs.existsSync(path.join(p.aehdDir, 'aehd.sys'));
-    if (!has) throw new Error('AEHD 驱动包解压异常');
+    if (!has) throw new Error('AEHD Error al extraer el paquete del controlador');
     this._cache.accel = null;
     this._cache.accelAt = 0;
-    onProgress({ stage: 'done', message: 'AEHD 驱动已就绪，需管理员权限安装', percent: 100 });
+    onProgress({ stage: 'done', message: 'AEHD El controlador está listo y necesita permisos de administrador para instalarse', percent: 100 });
     return { ok: true, dir: p.aehdDir, installer: path.join(p.aehdDir, 'silent_install.bat') };
   }
 
@@ -1123,23 +1123,23 @@ class Provisioner {
     await this.guardDisk('qemu', p.root);
     const setup = path.join(p.tmp, 'qemu-setup.exe');
 
-    onProgress({ stage: 'resolve', message: '查找最新 QEMU 版本…', percent: 1 });
+    onProgress({ stage: 'resolve', message: 'Buscando la última versión de QEMU…', percent: 1 });
     const url = await this.resolveQemuUrl();
-    onProgress({ stage: 'download', message: `下载 QEMU（约 200MB）…`, percent: 2, url });
+    onProgress({ stage: 'download', message: `Descargando QEMU (unos 200 MB)…`, percent: 2, url });
 
     await download(url, setup, {
       resume: true,
       onProgress: (pr) => onProgress({
         stage: 'download',
-        message: `下载 QEMU… ${(pr.got / 1048576).toFixed(0)}MB / ${(pr.total / 1048576).toFixed(0)}MB`
+        message: `Descargando QEMU… ${(pr.got / 1048576).toFixed(0)} MB / ${(pr.total / 1048576).toFixed(0)} MB`
           + (pr.speed ? `（${(pr.speed / 1024).toFixed(0)} KB/s）` : ''),
         percent: pr.percent,
         canResume: true,
       }),
     });
-    if (fileSize(setup) < MIN_SIZE.qemu) throw new Error('QEMU 安装包下载不完整');
+    if (fileSize(setup) < MIN_SIZE.qemu) throw new Error('QEMU La descarga del paquete está incompleta');
 
-    onProgress({ stage: 'install', message: '正在安装 QEMU（静默）…', percent: 96 });
+    onProgress({ stage: 'install', message: 'Instalando QEMU (en silencio)…', percent: 96 });
     // qemu-w64-setup 是 NSIS 安装器：/S 静默，/D 指定目录（必须最后且不加引号）
     const target = p.qemuDir;
     fs.mkdirSync(target, { recursive: true });
@@ -1152,11 +1152,11 @@ class Provisioner {
 
     const v = await this.qemuVersion();
     if (!v.ok) {
-      throw new Error('QEMU 安装后未找到 qemu-system-x86_64.exe：可手动下载 QEMU 并解压到 engine/qemu/');
+      throw new Error('QEMU No se ha encontrado qemu-system-x86_64.exe tras instalar: puedes descargar QEMU a mano y extraerlo en engine/qemu/');
     }
     fs.rmSync(setup, { force: true });
     this._cache.qemuVersion = v.version;
-    onProgress({ stage: 'done', message: `QEMU ${v.version} 就绪`, percent: 100 });
+    onProgress({ stage: 'done', message: `QEMU ${v.version} Listo`, percent: 100 });
     return v;
   }
 
@@ -1170,12 +1170,12 @@ class Provisioner {
     const custom = s.runtime.isoUrl && s.runtime.isoUrl.trim();
     const urls = custom ? [custom, ...SOURCES.iso] : SOURCES.iso;
 
-    onProgress({ stage: 'download', message: '下载 Android-x86 9.0-r2（约 900MB，8 线程分块）…', percent: 1 });
+    onProgress({ stage: 'download', message: 'Descargando Android-x86 9.0-r2 (unos 900 MB, 8 hilos por bloques)…', percent: 1 });
     const r = await downloadAnyParallel(urls, dest, {
       connections: 8,
       onProgress: (pr) => onProgress({
         stage: 'download',
-        message: `下载系统镜像… ${(pr.got / 1048576).toFixed(0)}MB / ${(pr.total / 1048576).toFixed(0)}MB`
+        message: `Descargando la imagen del sistema… ${(pr.got / 1048576).toFixed(0)} MB / ${(pr.total / 1048576).toFixed(0)} MB`
           + (pr.speed ? `（${(pr.speed / 1024).toFixed(0)} KB/s）` : ''),
         percent: pr.percent,
         canResume: true,
@@ -1184,18 +1184,18 @@ class Provisioner {
 
     const info = this.inspectIso(dest);
     if (!info.ok) {
-      throw new Error(`系统镜像不可用：${info.reason}${info.size && info.size < MIN_SIZE.iso ? '，可再次点击继续断点续传' : ''}`);
+      throw new Error(`Imagen del sistema no disponible: ${info.reason}${info.size && info.size < MIN_SIZE.iso ? '，Puedes volver a pulsar para reanudar la descarga' : ''}`);
     }
 
     store.saveSettings({ runtime: { isoPath: dest } });
-    onProgress({ stage: 'done', message: `系统镜像就绪（${(info.size / 1073741824).toFixed(2)} GB）`, percent: 100, path: dest });
+    onProgress({ stage: 'done', message: `Imagen del sistema lista (${(info.size / 1073741824).toFixed(2)} GB)`, percent: 100, path: dest });
     return { ...r, ...info };
   }
 
   /** 校验用户导入的镜像/ISO */
   inspectImage(file) {
     const size = fileSize(file);
-    if (!size) throw new Error('文件不存在或为空');
+    if (!size) throw new Error('El archivo no existe o está vacío');
     const fd = fs.openSync(file, 'r');
     const head4 = Buffer.alloc(4);
     fs.readSync(fd, head4, 0, 4, 0);
@@ -1211,7 +1211,7 @@ class Provisioner {
   importIso(file) {
     const info = this.inspectIso(file);
     if (!info.ok) {
-      const e = new Error(info.reason || '镜像文件不可用');
+      const e = new Error(info.reason || 'El archivo de imagen no está disponible');
       e.invalidIso = true;
       throw e;
     }
@@ -1233,7 +1233,7 @@ class Provisioner {
     const dest = s.runtime.diskPath || p.disk;
     if (fileSize(dest) > MIN_SIZE.disk) return { ok: true, path: dest, existed: true };
 
-    onProgress({ stage: 'disk', message: `创建 ${sizeGB}GB 虚拟磁盘…`, percent: 40 });
+    onProgress({ stage: 'disk', message: `Creando un disco virtual de ${sizeGB} GB…`, percent: 40 });
     const qemuImg = fs.existsSync(p.qemuImg)
       ? p.qemuImg
       : path.join(path.dirname(store.getSettings().runtime.qemuPath || ''), 'qemu-img.exe');
@@ -1241,16 +1241,16 @@ class Provisioner {
     const tool = fs.existsSync(qemuImg) ? qemuImg : null;
     if (tool) {
       const r = await run(tool, ['create', '-f', 'qcow2', dest, `${sizeGB}G`], { timeout: 120000 });
-      if (!r.ok) throw new Error(`qemu-img 创建虚拟磁盘失败：${r.stderr || r.stdout}`);
+      if (!r.ok) throw new Error(`qemu-img Error al crear el disco virtual: ${r.stderr || r.stdout}`);
     } else {
-      throw new Error('未找到 qemu-img.exe，请先安装 QEMU');
+      throw new Error('No se ha encontrado qemu-img.exe; instala QEMU primero');
     }
     store.saveSettings({ runtime: { diskPath: dest } });
-    onProgress({ stage: 'done', message: '虚拟磁盘已创建', percent: 100, path: dest });
+    onProgress({ stage: 'done', message: 'Disco virtual creado', percent: 100, path: dest });
     return { ok: true, path: dest, size: fileSize(dest) };
   }
 
-  // ---------------- 系统镜像可达性预检 ----------------
+  // ---------------- 系统镜像accesible性预检 ----------------
 
   async probeSources() {
     const [adb, qemu, iso] = await Promise.all([

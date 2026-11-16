@@ -62,7 +62,7 @@ try {
 /**
  * @param {string} exePath apkstart 主程序路径（开发模式下是 electron.exe）
  * @param {string} [iconPath] 可选 ico
- * @param {string} [extraArgs] 开发模式下需要先传应用目录，例如 "\"C:\\path\\apkstart\""
+ * @param {string} [extraArgs] 开发模式下需要先传App目录，例如 "\"C:\\path\\apkstart\""
  */
 function registerAssociation(exePath, iconPath, extraArgs) {
   const icon = iconPath || exePath;
@@ -80,10 +80,10 @@ function registerAssociation(exePath, iconPath, extraArgs) {
   reg(['add', `${CLASSES}\\${EXT}`, '/ve', '/d', PROGID, '/f']);
   reg(['add', `${CLASSES}\\${EXT}\\OpenWithProgids`, '/v', PROGID, '/t', 'REG_NONE', '/f']);
 
-  reg(['add', `${CLASSES}\\${PROGID}`, '/ve', '/d', 'Android 应用包', '/f']);
-  reg(['add', `${CLASSES}\\${PROGID}`, '/v', 'FriendlyTypeName', '/d', 'Android 应用包', '/f']);
+  reg(['add', `${CLASSES}\\${PROGID}`, '/ve', '/d', 'Android Paquete de app', '/f']);
+  reg(['add', `${CLASSES}\\${PROGID}`, '/v', 'FriendlyTypeName', '/d', 'Android Paquete de app', '/f']);
   reg(['add', `${CLASSES}\\${PROGID}\\DefaultIcon`, '/ve', '/d', `"${icon}",0`, '/f']);
-  reg(['add', `${CLASSES}\\${PROGID}\\shell\\open`, '/ve', '/d', '安装到 ApkStart', '/f']);
+  reg(['add', `${CLASSES}\\${PROGID}\\shell\\open`, '/ve', '/d', 'Instalar en ApkStart', '/f']);
   reg(['add', `${CLASSES}\\${PROGID}\\shell\\open\\command`, '/ve', '/d', command, '/f']);
 
   notifyShell();

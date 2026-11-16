@@ -27,54 +27,54 @@ function friendlyInstallError(raw) {
   const tag = code ? code[0] : '';
   const table = {
     INSTALL_FAILED_NO_MATCHING_ABIS:
-      '安装失败：这个应用只提供 ARM 原生库（多数国产应用如此），'
-      + '当前系统镜像没有 ARM 转译层。ApkStart 会自动切换到内置新版翻译层的兼容镜像并重试。',
+      'Error al instalar: esta app solo trae bibliotecas ARM nativas (lo habitual en muchas apps chinas);'
+      + 'la imagen actual no tiene capa de traducción ARM. ApkStart cambiará a la imagen compatible con la capa nueva y reintentará.',
     INSTALL_FAILED_OLDER_SDK:
-      '安装失败：应用要求的 Android 版本高于当前运行时（需更高系统镜像）。',
+      'Error al instalar: la app exige una versión de Android superior a la del entorno actual (hace falta una imagen más nueva).',
     INSTALL_PARSE_FAILED_NO_CERTIFICATES:
-      '安装失败：APK 没有有效签名，无法安装。',
+      'Error al instalar: el APK no tiene una firma válida y no se puede instalar.',
     INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES:
-      '安装失败：与已安装版本签名不一致，请先卸载旧版再装。',
+      'Error al instalar: la firma no coincide con la versión instalada; desinstala la anterior primero.',
     INSTALL_FAILED_VERSION_DOWNGRADE:
-      '安装失败：设备上已安装更高版本，不能降级覆盖。',
+      'Error al instalar: hay una versión más reciente instalada; no se puede sobrescribir con una inferior.',
     INSTALL_FAILED_INSUFFICIENT_STORAGE:
-      '安装失败：运行时磁盘空间不足，请清理后重试。',
+      'Error al instalar: no queda espacio en el disco del entorno; libera espacio e inténtalo de nuevo.',
     INSTALL_FAILED_INVALID_APK:
-      '安装失败：APK 文件损坏或不完整（可能下载未完成），请重新获取。',
-    INSTALL_FAILED_INVALID_URI: '安装失败：APK 路径含特殊字符，请把文件移到纯英文路径后重试。',
-    INSTALL_FAILED_ALREADY_EXISTS: '安装失败：已存在同名应用且签名不同，请先卸载。',
-    INSTALL_FAILED_UPDATE_INCOMPATIBLE: '安装失败：与已安装版本签名不一致，请先卸载旧版。',
+      'Error al instalar: el APK está dañado o incompleto (puede que la descarga no terminara); vuelve a obtenerlo.',
+    INSTALL_FAILED_INVALID_URI: 'Error al instalar: la ruta del APK contiene caracteres especiales; muévelo a una ruta solo con caracteres latinos.',
+    INSTALL_FAILED_ALREADY_EXISTS: 'Error al instalar: ya existe una app con el mismo nombre y otra firma; desinstálala primero.',
+    INSTALL_FAILED_UPDATE_INCOMPATIBLE: 'Error al instalar: la firma no coincide con la versión instalada; desinstala la anterior.',
     INSTALL_FAILED_DEPRECATED_SDK_VERSION:
-      '安装失败：这是面向很老 Android 版本的应用（targetSdk 过低），Android 14 默认禁止安装。'
-      + 'ApkStart 会自动用官方绕过参数重试。',
-    INSTALL_FAILED_TEST_ONLY: '安装失败：这是仅供测试的应用包，已自动加上测试包参数重试。',
-    INSTALL_FAILED_MISSING_SHARED_LIBRARY: '安装失败：应用依赖的设备特性（如特定厂商库）在当前运行时不存在。',
-    INSTALL_FAILED_USER_RESTRICTION: '安装失败：系统限制了安装，请重启运行时后重试。',
-    INSTALL_FAILED_CONFLICTING_PROVIDER: '安装失败：与已有应用的 ContentProvider 冲突，请卸载冲突应用。',
-    INSTALL_FAILED_INTERNAL_ERROR: '安装失败：系统内部错误（常见于存储空间不足或开机未完成），请重启运行时后重试。',
+      'Error al instalar: la app está pensada para versiones muy antiguas de Android (targetSdk demasiado bajo) y Android 14 la bloquea por defecto.'
+      + 'Se reintentará automáticamente con el parámetro oficial de excepción.',
+    INSTALL_FAILED_TEST_ONLY: 'Error al instalar: es un paquete de pruebas; se ha reintentado automaticamente con el parámetro de paquete de prueba.',
+    INSTALL_FAILED_MISSING_SHARED_LIBRARY: 'Error al instalar: la app depende de funciones del dispositivo (por ejemplo, bibliotecas de un fabricante) que no existen en el entorno actual.',
+    INSTALL_FAILED_USER_RESTRICTION: 'Error al instalar: el sistema bloqueó la instalación; reinicia el entorno e inténtalo de nuevo.',
+    INSTALL_FAILED_CONFLICTING_PROVIDER: 'Error al instalar: hay un conflicto de ContentProvider con otra app; desinstala la app en conflicto.',
+    INSTALL_FAILED_INTERNAL_ERROR: 'Error al instalar: error interno del sistema (habitual si falta espacio o el arranque no terminó); reinicia el entorno e inténtalo de nuevo.',
   };
   const msg = table[tag];
-  return msg ? `${msg}（${tag}）` : `安装失败：${raw}`;
+  return msg ? `${msg}（${tag}）` : `Error al instalar: ${raw}`;
 }
 
-/** 把启动后的崩溃日志翻译成能看懂的原因 */
+/** 把启动后的崩溃Registros翻译成能看懂的原因 */
 function friendlyLaunchError(raw, pkg) {
   const t = String(raw || '');
   if (/DoBadTrampoline|libndk_translation|houdini|SIGABRT.*arm/i.test(t)) {
-    return `${pkg || '应用'} 启动后崩溃：ARM 翻译层与该应用的信号处理不兼容。`
-      + 'ApkStart 会自动切换到 Android 14 兼容镜像后重试。';
+    return `${pkg || 'App'} Se cerró al iniciar: la capa de traducción ARM no es compatible con el manejo de señales de esta app.`
+      + 'Se cambiará a la imagen compatible de Android 14 y se reintentará.';
   }
   if (/UnsatisfiedLinkError|dlopen failed|couldn't find "lib|\.so.*not found/i.test(t)) {
-    return `${pkg || '应用'} 启动后崩溃：缺少设备原生库（应用可能只提供 ARM 版本）。`
-      + '会自动切换到带 ARM 翻译层的兼容镜像后重试。';
+    return `${pkg || 'App'} Se cerró al iniciar: faltan bibliotecas nativas del dispositivo (puede que la app solo traiga versión ARM).`
+      + 'Se cambiará a la imagen compatible con capa de traducción ARM y se reintentará.';
   }
   if (/ClassNotFoundException|NoClassDefFoundError|AndroidRuntime/i.test(t)) {
-    return `${pkg || '应用'} 启动即崩溃（应用内部异常，可能与模拟器环境或缺少 Google 服务有关）。`;
+    return `${pkg || 'App'} Se cierra al arrancar (excepción interna de la app, posiblemente por el entorno del emulador o la falta de servicios de Google).`;
   }
   if (/java\.lang\.SecurityException|Permission Denial/i.test(t)) {
-    return `${pkg || '应用'} 启动失败：系统拒绝了启动请求（权限或签名问题）。`;
+    return `${pkg || 'App'} Error al iniciar: el sistema rechazó la solicitud (permisos o firma).`;
   }
-  return `${pkg || '应用'} 未能启动${t ? `：${t.slice(0, 240)}` : '（进程未存活）'}`;
+  return `${pkg || 'App'} No se pudo iniciar ${t ? `：${t.slice(0, 240)}` : '（el proceso no sigue vivo)'}`;
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -128,8 +128,8 @@ function parseResolvedActivity(pkg, out) {
 }
 
 /**
- * adb install 的超时上限本来固定 240s，但 2GB+ 的安装包在慢盘上
- * 「push + 安装 + dexopt」很容易超过 4 分钟：一旦超时就会被当成安装失败，
+ * adb install 的Tiempo agotado上限本来固定 240s，但 2GB+ 的安装包在慢盘上
+ * 「push + 安装 + dexopt」很容易超过 4 分钟：一旦Tiempo agotado就会被当成安装失败，
  * 用户看到的就是「大包装了没反应/失败」。这里按包体放大，上限 20 分钟。
  */
 function installTimeoutMs(bytes) {
@@ -204,15 +204,15 @@ class AdbClient {
         maxBuffer: 64 * 1024 * 1024,
         encoding: binary ? 'buffer' : 'utf8',
         windowsHide: true,
-        // 与运行时模拟器共用专用 adb server 端口（默认 5044），与 5037 上的
-        // WSA / 第三方模拟器 adb 隔离，避免注册被反复踢掉导致设备 offline
+        // 与运行时Emulador共用专用 adb server 端口（默认 5044），与 5037 上的
+        // WSA / 第三方Emulador adb 隔离，避免注册被反复踢掉导致设备 offline
         env: this._adbEnv(),
       }, (err, stdout, stderr) => {
         if (err) {
           // adb install 的失败原因写在 stdout 且退出码非 0；
           // 旧版只看 stderr，导致用户永远只看到一句空泛的「失败」。
           const text = [stdout, stderr, err.message].filter(Boolean).join('\n').trim();
-          const e = new AdbError(`adb ${finalArgs.join(' ')} 失败: ${text}`, stderr, err.code);
+          const e = new AdbError(`adb ${finalArgs.join(' ')} Error: ${text}`, stderr, err.code);
           e.stdout = stdout;
           e.raw = text;
           return reject(e);
@@ -265,10 +265,10 @@ class AdbClient {
     });
     p.stderr.on('data', () => { /* 忽略：设备离线等信息由调用方兜底 */ });
     p.stdin.on('error', () => { /* 断开时由 exit 统一清理 */ });
-    p.on('error', () => { this._failWaiters(new Error('adb shell 启动失败')); });
+    p.on('error', () => { this._failWaiters(new Error('adb shell Error al iniciar')); });
     p.on('exit', () => {
       if (this._input === p) this._input = null;
-      this._failWaiters(new Error('adb shell 已退出'));
+      this._failWaiters(new Error('adb shell Cerrada'));
     });
     return p;
   }
@@ -284,7 +284,7 @@ class AdbClient {
   /** 执行一条白名单内的 input 命令；失败会回收会话，调用方可回退到一次性 adb */
   async input(cmd, { timeout = 4000 } = {}) {
     const { isInputCommand } = require('./pointer');
-    if (!isInputCommand(cmd)) throw new Error('非法的输入命令');
+    if (!isInputCommand(cmd)) throw new Error('Comando de entrada no válido');
     const p = this._inputSession();
     const id = ++this._inputSeq;
     const token = `__APKSTART_${id}__`;
@@ -292,7 +292,7 @@ class AdbClient {
       const timer = setTimeout(() => {
         this._waiters.delete(id);
         this.disposeInput();
-        reject(new Error('input 命令超时'));
+        reject(new Error('input Tiempo de espera agotado'));
       }, timeout);
       this._waiters.set(id, { resolve, reject, timer, token });
       try {
@@ -310,7 +310,7 @@ class AdbClient {
     this._input = null;
     for (const [, w] of this._waiters) {
       clearTimeout(w.timer);
-      w.reject(new Error('输入通道已关闭'));
+      w.reject(new Error('El canal de entrada está cerrado'));
     }
     this._waiters.clear();
     if (p) {
@@ -363,16 +363,16 @@ class AdbClient {
   /**
    * 安装单个 APK，带自动降级：
    *  - 默认去掉 -g（自动授予全部权限在部分镜像上会让 PermissionController 崩掉）；
-   *  - 带 --bypass-low-target-sdk-block，解决 Android 14 拒绝安装老 targetSdk 应用；
+   *  - 带 --bypass-low-target-sdk-block，解决 Android 14 拒绝安装老 targetSdk App；
    *  - adb 版本不认该参数 / 中文路径 / 传输错误时自动换写法重试；
    *  - NO_MATCHING_ABIS 抛带 code 的错误，交给上层自动切换兼容镜像。
    */
   async install(apkPath) {
-    if (!fs.existsSync(apkPath)) throw new Error(`APK 不存在: ${apkPath}`);
+    if (!fs.existsSync(apkPath)) throw new Error(`APK No existe: ${apkPath}`);
     const staged = stageApk(apkPath);
     const file = staged.path;
     const variants = [
-      // -g 自动授予运行时权限，省掉应用里的授权弹窗；部分镜像不支持则自动降级去掉
+      // -g 自动授予运行时权限，省掉App里的授权弹窗；部分镜像不支持则自动降级去掉
       ['install', '-r', '-t', '-g', '--bypass-low-target-sdk-block', file],
       ['install', '-r', '-t', '--bypass-low-target-sdk-block', file],
       ['install', '-r', '-t', file],
@@ -419,7 +419,7 @@ class AdbClient {
           // 没拿到明确错误码：最后一种写法再试
         }
       }
-      const err = new Error(friendlyInstallError(last || '安装失败，未获得明确原因'));
+      const err = new Error(friendlyInstallError(last || 'Error al instalar sin una causa clara'));
       err.code = (/INSTALL_[A-Z_]+/.exec(last) || [])[0] || 'INSTALL_UNKNOWN';
       err.raw = last;
       throw err;
@@ -430,7 +430,7 @@ class AdbClient {
 
   /** 拆分 APK（.apks / .xapk 解出来的多个分片）走 install-multiple */
   async installMultiple(apkPaths) {
-    if (!apkPaths || !apkPaths.length) throw new Error('没有可安装的分片 APK');
+    if (!apkPaths || !apkPaths.length) throw new Error('No hay APKs divididos instalables');
     const staged = apkPaths.map((p) => stageApk(p));
     const files = staged.map((s) => s.path);
     const totalBytes = staged.reduce((n, s) => n + (fs.existsSync(s.path) ? fs.statSync(s.path).size : 0), 0);
@@ -453,7 +453,7 @@ class AdbClient {
           throw new Error(friendlyInstallError(raw));
         }
       }
-      throw new Error('拆分 APK 安装失败');
+      throw new Error('Error al instalar el APK dividido');
     } finally {
       staged.forEach((s) => unstage(s.staged ? s.path : null));
     }
@@ -479,7 +479,7 @@ class AdbClient {
   }
 
   /** 从系统解析真正的启动 Activity（清单里解析不出来时的兜底） */
-  /** 应用升级后入口可能变，解析前先把这个包从缓存里摘掉 */
+  /** App升级后入口可能变，解析前先把这个包从缓存里摘掉 */
   clearLauncherCache(pkg) {
     if (!pkg) { LAUNCHER_CACHE.clear(); return; }
     LAUNCHER_CACHE.delete(`${this.adbPath}|${pkg}`);
@@ -487,7 +487,7 @@ class AdbClient {
 
   async resolveLauncher(pkg) {
     // 解析入口 Activity 要一次 adb 往返（~200-400ms），而它在一个启动会话里不会变。
-    // 缓存起来，第二次点同一个应用直接跳过；10 分钟后自然失效，重装应用也不会用错入口。
+    // 缓存起来，第二次点同一个App直接跳过；10 分钟后自然失效，重装App也不会用错入口。
     const key = `${this.adbPath}|${pkg}`;
     const hit = LAUNCHER_CACHE.get(key);
     if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.value;
@@ -504,7 +504,7 @@ class AdbClient {
     return null;
   }
 
-  /** 应用是否真的活着：am start 返回成功 ≠ 进程没崩 */
+  /** App是否真的活着：am start 返回成功 ≠ 进程没崩 */
   async waitAppAlive(pkg, timeoutMs = 12000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -523,19 +523,19 @@ class AdbClient {
       );
     } catch (_) { /* ignore */ }
     const text = String(crash || '').trim();
-    // 没有崩溃日志时不能断言失败：部分大型应用首次启动要 20-40 秒
+    // 没有崩溃Registros时不能断言失败：部分大型App首次启动要 20-40 秒
     return { ok: false, crash: text, uncertain: !text };
   }
 
   /**
-   * 启动应用，带三级降级：
+   * 启动App，带三级降级：
    *   freeform 独立窗口 → 普通全屏 → monkey 兜底；
    * 每次都验证进程是否存活，崩溃时抓 logcat 并抛带 code 的错误供上层自动切镜像。
    */
   async startApp(pkg, activity, { freeform = true, bounds = null, forceStop = false } = {}) {
     if (forceStop) await this.forceStop(pkg);
     // 必须用系统解析出来的 LAUNCHER 入口，不能只用 APK 里解析到的主 Activity：
-    // 很多应用（红果短剧等）的启动页才做真正的初始化，直接进主 Activity 会
+    // 很多App（红果短剧等）的启动页才做真正的初始化，直接进主 Activity 会
     // 抛 "had you called RpcService.init"，表现为点开闪一下就没了。
     const resolved = (await this.resolveLauncher(pkg).catch(() => '')) || activity;
     // resolved 可能是完整组件（pkg/class），也可能只是类名（老 apps.json）；
@@ -565,9 +565,9 @@ class AdbClient {
       // eslint-disable-next-line no-await-in-loop
       const alive = await this.waitAppAlive(pkg, 6000);
       if (alive.ok) return out;
-      if (alive.uncertain) return `${out}\n（应用仍在加载中）`;
+      if (alive.uncertain) return `${out}\n（la app aún está cargando)`;
       lastError = alive.crash || lastError;
-      // 崩溃日志明确指向 ARM 翻译层时不再重试，直接交给上层切换兼容镜像
+      // 崩溃Registros明确指向 ARM 翻译层时不再重试，直接交给上层切换兼容镜像
       if (/DoBadTrampoline|libndk_translation|UnsatisfiedLinkError|dlopen failed/i.test(alive.crash || '')) {
         const err = new Error(friendlyLaunchError(alive.crash, pkg));
         err.code = 'APP_CRASHED';
@@ -633,7 +633,7 @@ class AdbClient {
   /** 开启 freeform（独立窗口）支持，失败不影响主流程 */
   async ensureFreeform() {
     // 合成为一次 adb shell：4 次独立 execFile 在 Windows 上要 600ms+，
-    // 而这段正好在「点开应用」的等待里。
+    // 而这段正好在「点开App」的等待里。
     const out = await this.shell(
       'settings put global enable_freeform_support 1 ; '
       + 'settings put global force_resizable_activities 1 ; '
@@ -714,12 +714,12 @@ class AdbClient {
     return rows;
   }
 
-  /** 清除应用数据 */
+  /** 清除App数据 */
   async clearData(pkg) {
     await this.shell(`pm clear ${pkg}`);
   }
 
-  /** 导出应用数据（Windows/调试版可用 run-as；否则走 adb backup 兜底） */
+  /** 导出App数据（Windows/调试版可用 run-as；否则走 adb backup 兜底） */
   async exportAppData(pkg, localTarPath) {
     const remote = `/sdcard/apkstart-tmp-${pkg}.tar`;
     const cmd = `run-as ${pkg} tar -cf ${remote} . 2>/dev/null || (cd /data/data/${pkg} && tar -cf ${remote} .)`;
@@ -734,9 +734,9 @@ class AdbClient {
   }
 
   /**
-   * 把应用申请的运行时权限一次性授掉。
-   * 不授会有两个后果：① 首次启动弹系统授权框，用户看到的是「应用没打开」；
-   * ② 清过数据（pm clear）之后权限会掉，应用起来就卡在授权页。
+   * 把App申请的运行时权限一次性授掉。
+   * 不授会有两个后果：① 首次启动弹系统授权框，用户看到的是「App没打开」；
+   * ② 清过数据（pm clear）之后权限会掉，App起来就卡在授权页。
    */
   async grantRuntimePermissions(pkg) {
     let dump = '';
@@ -771,15 +771,15 @@ class AdbClient {
   }
 
   /**
-   * 进入「就是这个应用」的状态：
-   *  - 收起锁屏，避免开机后停在锁屏挡住应用；
+   * 进入「就是这个App」的状态：
+   *  - 收起锁屏，避免开机后停在锁屏挡住App；
    *  - 隐藏状态栏（保留底部导航键，鼠标不在手边时还能点返回/主页）；
    *  - 关掉系统动画，低配机器上体感差别非常大。
    * 全部是 settings 级命令，一次几百毫秒，重复调用无害。
    */
   async prepareForeground() {
     // 以前是 7 条命令串行发，每条都要新起一个 adb 进程（Windows 上 150~250ms），
-    // 合计 1~1.7 秒，全压在「点开应用」的等待里。合成一条 shell 后只剩一次往返。
+    // 合计 1~1.7 秒，全压在「点开App」的等待里。合成一条 shell 后只剩一次往返。
     const cmds = [
       'wm dismiss-keyguard',
       'settings put global policy_control immersive.status=*',
@@ -831,14 +831,14 @@ class AdbClient {
       // （见 doctor.lcdFor），这里再锁 1 等于把横面板又转成竖逻辑空间，
       // 结果就是画面躺倒 90° —— 这正是「横屏没弄好」的直接原因。
       await this.shell('wm user-rotation lock 0', { timeout: 15000 });
-      // 关键一步：红果这类应用自己声明了 portrait，系统会照办，于是
+      // 关键一步：红果这类App自己声明了 portrait，系统会照办，于是
       // init=1280x720 的横面板被转成 cur=720x1280 的竖逻辑空间，画面又躺下。
-      // 打开「忽略应用的屏幕方向请求」，系统才会按面板方向排版。
+      // 打开「忽略App的屏幕方向请求」，系统才会按面板方向排版。
       // 竖屏模式下必须显式关掉，否则上一次横屏留下的 true 会让竖屏面板里
       // 显示横屏排版。API < 31 没有这个命令，失败忽略即可。
       await this.shell(`wm set-ignore-orientation-request ${landscape ? 'true' : 'false'}`, { timeout: 15000 });
       // 打开 freeform / 忽略方向请求后，安卓会弹一次「See and do more」的引导框
-      // （"Double-tap outside an app to reposition it…"）。它盖在应用上面，
+      // （"Double-tap outside an app to reposition it…"）。它盖在App上面，
       // 用户以为程序坏了。这里预先把它标记为已确认，再兜底按一次返回。
       await this.shell('settings put secure freeform_mode_confirmations confirmed', { timeout: 10000 });
       if (landscape) await this.shell('input keyevent KEYCODE_BACK', { timeout: 8000 });

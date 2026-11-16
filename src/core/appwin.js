@@ -1,10 +1,10 @@
 'use strict';
 /**
- * 应用窗口：一个正在运行的安卓应用 = 一个干净的 Windows 窗口。
+ * App窗口：一个正在运行的App de Android = 一个干净的 Windows 窗口。
  *
  * 窗口里只有顶部一条 38px 的标题栏（旋转 / 最小化 / 最大化 / 关闭），
- * 下面的整块画面是嵌进来的模拟器窗口（SetParent），所以看不到安卓桌面、
- * 看不到模拟器自带的侧边工具栏，也不会多出第二个任务栏图标。
+ * 下面的整块画面是嵌进来的Emulador窗口（SetParent），所以看不到安卓桌面、
+ * 看不到Emulador自带的侧边工具栏，也不会多出第二个任务栏图标。
  */
 const { BrowserWindow, screen, nativeImage } = require('electron');
 const fs = require('fs');
@@ -14,7 +14,7 @@ const store = require('./store');
 
 const TITLEBAR_H = 38;
 /**
- * 模拟器窗口四周自带 8px 的灰色内边距（Qt 的边框留白），
+ * Emulador窗口四周自带 8px 的灰色内边距（Qt 的边框留白），
  * 而真正的 LCD 画面是从 +8px 开始的。把子窗口整体放大 16px 并向左上偏移 8px，
  * 这圈灰边就正好被推到客户区外面，画面干净地贴满四周。
  */
@@ -33,7 +33,7 @@ class AppWindow {
     // 画面窗口的候选句柄来源：自带底座为 null（由窗口代理自己找），
     // 第三方底座（MuMu 等）传入一个返回 ["0x…"] 的函数，每次 embed 现取。
     this.windowTargets = typeof windowTargets === 'function' ? windowTargets : null;
-    // 全局鼠标钩子只在「应用窗口前台 + 至少一项映射开启」时安装。
+    // 全局鼠标钩子只在「App窗口前台 + 至少一项映射开启」时安装。
     // pointerConfig 传函数：设置页改了开关，下一次 focus 就生效，不用重启。
     this.mouseHook = mouseHook;
     this.pointerConfig = pointerConfig;
@@ -71,7 +71,7 @@ class AppWindow {
   }
 
   /**
-   * 模拟器原生窗口自己按设备面板锁宽高比，给错比例会被夹回去。
+   * Emulador原生窗口自己按设备面板锁宽高比，给错比例会被夹回去。
    * 这里算出当前窗口应有的 w/h 比（含标题栏高度），用来一次给对的尺寸。
    * 独立窗口模式下壳窗口是隐藏的、bounds 可能是竖屏默认值，
    * 所以要按面板方向校正（横屏时宽 > 高，比值 > 1）。
@@ -100,9 +100,9 @@ class AppWindow {
   }
 
   /**
-   * 打开（或复用）应用窗口。
+   * 打开（或复用）App窗口。
    * @param {object} o { pkg, label, iconPath, portrait, fullscreen, detached, onClosed }
-   *        detached=true 时走「独立窗口模式」：壳窗口只加载不显示，画面在模拟器原生窗口里
+   *        detached=true 时走「独立窗口模式」：壳窗口只加载不显示，画面在Emulador原生窗口里
    */
   open(o) {
     const { pkg, label, iconPath, portrait, fullscreen, detached } = o;
@@ -117,10 +117,10 @@ class AppWindow {
 
     this.pkg = pkg;
     this.portrait = portrait || { w: 540, h: 960 };
-    // 独立窗口模式下「全屏」要作用在模拟器窗口上（我们这层壳是隐藏的，
+    // 独立窗口模式下「全屏」要作用在Emulador窗口上（我们这层壳是隐藏的，
     // maximize 一个隐藏窗口没有任何视觉效果，openDetached 会读这个标记）。
     this._wantFullscreen = !!fullscreen;
-    this.state = { label: label || '应用', tip: '正在启动安卓运行时…', ready: false, landscape: false };
+    this.state = { label: label || 'App', tip: 'Iniciando el entorno de Android…', ready: false, landscape: false };
 
     const area = this._area();
     const size = AppWindow.sizeFor(area, this.portrait, false);
@@ -155,14 +155,14 @@ class AppWindow {
     });
 
     this.win.loadFile(path.join(__dirname, '..', 'ui', 'shell.html'));
-    // 页面标题会把窗口标题改成 shell.html 的 <title>，任务栏就认不出是哪个应用了，
-    // 这里挡住，让 OS 标题一直等于应用名（任务栏悬浮提示、Alt+Tab 都靠它）。
+    // 页面标题会把窗口标题改成 shell.html 的 <title>，任务栏就认不出是哪个App了，
+    // 这里挡住，让 OS 标题一直等于App名（任务栏悬浮提示、Alt+Tab 都靠它）。
     this.win.webContents.on('page-title-updated', (e) => {
       e.preventDefault();
       try { this.win.setTitle(label || 'ApkStart'); } catch (_) { /* 窗口可能已销毁 */ }
     });
     this.win.once('ready-to-show', () => {
-      // 独立窗口模式下，安卓画面在模拟器自己的原生窗口里，我们这层壳没有内容可显示，
+      // 独立窗口模式下，安卓画面在Emulador自己的原生窗口里，我们这层壳没有内容可显示，
       // 留着只会多一个黑色空窗口。所以只加载、不显示（外壳仍存在，供状态/关闭逻辑用）。
       if (this.detachedMode) return;
       this.win.show();
@@ -190,8 +190,8 @@ class AppWindow {
       const pkg = this.pkg;
       this.pkg = null;
       this._closing = false;
-      // 不走 close() 的关闭路径（Alt+F4、任务栏关闭、系统关机）也必须停掉安卓应用、
-      // 把模拟器窗口摘下来。否则窗口消失了但应用还在后台跑，用户再点开会因为
+      // 不走 close() 的关闭路径（Alt+F4、任务栏关闭、系统关机）也必须停掉App de Android、
+      // 把Emulador窗口摘下来。否则窗口消失了但App还在后台跑，用户再点开会因为
       // 「已在运行」直接切过去，看起来就是「关不掉」。
       if (pkg && this._onCloseApp) {
         try { this._onCloseApp(pkg); } catch (_) { /* ignore */ }
@@ -200,7 +200,7 @@ class AppWindow {
         if (this._closedCb) this._closedCb(pkg);
       });
     });
-    // 只在「应用窗口真正处于前台」且至少一项鼠标映射开启时装全局钩子；
+    // 只在「App窗口真正处于前台」且至少一项鼠标映射开启时装全局钩子；
     // 失焦/关闭立即卸载，绝不让 ApkStart 在后台拖慢整个系统的鼠标。
     this.win.on('focus', () => this._syncHook(true));
     this.win.on('blur', () => this._syncHook(false));
@@ -257,19 +257,19 @@ class AppWindow {
   setIcon(p) { this.iconUrl = iconUrl(p); this._push(); }
 
   /**
-   * 把模拟器窗口嵌进当前窗口，并铺满标题栏以下的区域。
+   * 把Emulador窗口嵌进当前窗口，并铺满标题栏以下的区域。
    * 常驻压制不关闭：它会跳过「已经嵌进我们窗口」的那一个，其余窗口（含 qemu /
    * netsimd 的控制台黑窗）继续压住 —— 关了反而会给它们再露一次脸的机会。
-   * 模拟器窗口偶尔还没创建好（快照恢复太快的机器上），这里重试两次。
+   * Emulador窗口偶尔还没创建好（快照恢复太快的机器上），这里重试两次。
    */
   /**
-   * 独立窗口模式：**不**把模拟器嵌进我们窗口，而是让它开自己的原生窗口。
+   * 独立窗口模式：**不**把Emulador嵌进我们窗口，而是让它开自己的原生窗口。
    *
    * 为什么要有这条路：嵌入（SetParent）虽然观感统一，但会带来一整串麻烦 ——
    * 前后台 Z 序、黑边、坐标映射错位、最大化后不铺满、Qt 面板方向与宿主比例打架。
    * 这些都是「把一个别人的窗口塞进自己窗口」固有的代价。
    *
-   * 独立窗口下，模拟器窗口是系统原生窗口：方向、缩放、输入全由它自己管，
+   * 独立窗口下，Emulador窗口是系统原生窗口：方向、缩放、输入全由它自己管，
    * 上面那一整类问题从根上不存在。代价是多一个任务栏图标、观感不完全统一。
    *
    * @returns {Promise<boolean>} 是否成功切到独立窗口
@@ -280,17 +280,17 @@ class AppWindow {
     try { this.win.hide(); } catch (_) { /* ignore */ }
     // 先确保它没被嵌在里面（从嵌入切过来时 _emu 的父窗口还是宿主）。
     // keep=true：告诉代理这是「切独立窗口」，不是「结束嵌入」——否则它会把
-    // 用户正在看的模拟器窗口当成杂物藏掉。
+    // 用户正在看的Emulador窗口当成杂物藏掉。
     const dt = await this.agent.detach(true).catch((e) => ({ ok: false, error: e.message }));
     this._detachedDebug = `detach=${JSON.stringify(dt)}`;
     await sleep(600);
-    // 让模拟器窗口真的可见
+    // 让Emulador窗口真的可见
     const shown = await this.agent.show().catch((e) => ({ ok: false, error: e.message }));
     this._detachedDebug += ` show=${JSON.stringify(shown)}`;
     if (!shown || shown.ok === false) { this.lastEmbedError = this._detachedDebug; return false; }
     await sleep(300);
     // 按屏幕可用区居中和 sizing。
-    // 注意：模拟器原生窗口自己按设备面板比例锁宽高比（竖屏 9:16），
+    // 注意：Emulador原生窗口自己按设备面板比例锁宽高比（竖屏 9:16），
     // 给一个不匹配的 w/h，它会把宽夹回高度对应的值，结果就是「设了 1280 宽
     // 却只有 400 宽」。所以这里主动按面板比例算尺寸，一次给对。
     //
@@ -350,7 +350,7 @@ class AppWindow {
       // eslint-disable-next-line no-await-in-loop
       await sleep(attempt < 2 ? 300 : 800);
     }
-    // 把失败原因带出去：上层会写进 app.log，出问题时一眼能看出是「没找到模拟器窗口」
+    // 把失败原因带出去：上层会写进 app.log，出问题时一眼能看出是「没找到Emulador窗口」
     // 还是「SetParent 失败」，不用再靠猜。
     this.lastEmbedError = last ? (last.error || `emu=${last.emu}`) : 'no-response';
     return false;
@@ -360,7 +360,7 @@ class AppWindow {
     if (!this.isOpen) return;
     await this.agent.fit(this._rect()).catch(() => {});  }
 
-  /** 模拟器子窗口应该占据的矩形（物理像素，已把 8px 内边距推出可视区） */
+  /** Emulador子窗口应该占据的矩形（物理像素，已把 8px 内边距推出可视区） */
   _rect() {
     const sf = this._scale();
     const b = this.win.getContentBounds();
@@ -406,19 +406,19 @@ class AppWindow {
    * 横竖屏切换（标题栏旋转按钮）= 真正把「物理面板」换成横屏或竖屏。
    *
    * 为什么必须这么做（踩过的坑）：
-   *   - 改 wm size：只改 Android 逻辑分辨率，模拟器的物理 LCD 仍是竖的，
+   *   - 改 wm size：只改 Android 逻辑分辨率，Emulador的物理 LCD 仍是竖的，
    *     Qt 把画面贴在左上角 -> 画面躺倒 90°、只占一条、四周黑边、点击坐标错位；
    *   - 改 wm density：framebuffer 尺寸不变，画面不会铺满，最大化后右侧一大片空；
    *   - adb emu rotate：只转画面内容，系统里还是竖屏。
    * 唯一能得到「正立 + 铺满」横屏的办法，就是把 hw.lcd.width/height 换成
-   * 1280x720 并重启模拟器。重启约 30~60 秒，所以这里只做一次、并给出明确提示。
+   * 1280x720 并重启Emulador。重启约 30~60 秒，所以这里只做一次、并给出明确提示。
    *
    * @param {(next:boolean)=>Promise<boolean>} [onRestart] 由上层注入的重启实现
    */
   async rotate(onRestart) {
     if (!this.isOpen) return this.state.landscape;
     const next = !this.state.landscape;
-    this.setState({ tip: next ? '正在切换到横屏（重启安卓运行时，约 30-60 秒）…' : '正在切回竖屏（重启安卓运行时，约 30-60 秒）…', ready: false });
+    this.setState({ tip: next ? 'Cambiando a horizontal (reiniciando el entorno, unos 30-60 segundos)…' : 'Volviendo a vertical (reiniciando el entorno, unos 30-60 segundos)…', ready: false });
     if (typeof onRestart === 'function') {
       const ok = await onRestart(next).catch(() => false);
       if (ok) {
@@ -459,9 +459,9 @@ class AppWindow {
   minimize() { if (this.isOpen) this.win.minimize(); }
 
   /**
-   * 关闭窗口。默认同时停掉这个安卓应用（省内存），但保留引擎，下次点开是秒开。
+   * 关闭窗口。默认同时停掉这个App de Android（省内存），但保留Motor，下次点开是秒开。
    *
-   * 顺序很重要：必须先把模拟器窗口从宿主窗口上「摘下并藏好」，再销毁宿主。
+   * 顺序很重要：必须先把Emulador窗口从宿主窗口上「摘下并藏好」，再销毁宿主。
    * 反过来的话 Windows 会把跨进程的子窗口重新挂到桌面、并保持它原来的可见状态，
    * 用户桌面上就会凭空多出一个 "Android Emulator - apkstart5554" 的黑窗。
    */

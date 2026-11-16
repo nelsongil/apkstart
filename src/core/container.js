@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 应用级容器（纯计算层）
+ * App级容器（纯计算层）
  *
  * ApkStart 底层是 QEMU 全系统虚拟机，不可能像 WSA / 卓易通那样「只加载某个 App
  * 需要的那几个系统服务」——Linux 内核、zygote、system_server 必须整包起来。
@@ -20,7 +20,7 @@
  * 本文件不依赖 adb / Electron，全部是纯函数，便于回归测试。
  */
 
-/** 任何情况下都不能裁剪：动它们会直接导致界面黑屏或应用崩溃 */
+/** 任何情况下都不能裁剪：动它们会直接导致界面黑屏或App崩溃 */
 const NEVER_TRIM = [
   'android',
   'com.android.systemui',
@@ -37,11 +37,11 @@ const NEVER_TRIM = [
 
 /** 只有「深度裁剪」才禁用：这些包只做后台更新/壁纸/打印，停掉不影响打开 App */
 const OPTIONAL_SYSTEM = [
-  'com.android.vending',                    // Play 商店（后台更新扫描）
-  'com.google.android.setupwizard',         // 首次设置向导
-  'com.android.printspooler',               // 打印服务
+  'com.android.vending',                    // Play Tienda (exploración de actualizaciones en segundo plano)
+  'com.google.android.setupwizard',         // Asistente de configuración inicial
+  'com.android.printspooler',               // Servicio de impresión
   'com.android.wallpapercropper',
-  'com.android.dreams.basic',               // 屏保
+  'com.android.dreams.basic',               // Salvapantallas
   'com.android.providers.calendar',
   'com.android.providers.contacts',
   'com.android.managedprovisioning',
@@ -148,12 +148,12 @@ function nextSessionState(active, event, pkg) {
   };
 }
 
-/** 给日志/诊断用的一行摘要 */
+/** 给Registros/诊断用的一行摘要 */
 function describeSession(state, plan) {
   const n = state.active.length;
-  if (!n) return '容器空闲（Android 常驻但已降优先级，0 个应用进程）';
-  return `容器活跃：${n} 个应用窗口${plan && plan.stopped && plan.stopped.length
-    ? `，已停掉 ${plan.stopped.length} 个后台应用` : ''}`;
+  if (!n) return 'Contenedor inactivo (Android sigue activo con prioridad baja, 0 procesos de apps)';
+  return `Contenedor activo: ${n} ventanas de apps${plan && plan.stopped && plan.stopped.length
+    ? `，Se han detenido ${plan.stopped.length} apps en segundo plano` : ''}`;
 }
 
 module.exports = {

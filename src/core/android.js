@@ -23,7 +23,7 @@ class AndroidSettings {
 
   async client() {
     const rt = await this.runtime.ensure();
-    if (!rt.ok) throw new Error(rt.error || '运行时未就绪');
+    if (!rt.ok) throw new Error(rt.error || 'Entorno no listo');
     return rt.client;
   }
 
@@ -107,7 +107,7 @@ class AndroidSettings {
     return { ok: true, density: v };
   }
 
-  /** 一键整理：关动画 + 关遥测类服务 + 电池白名单，让应用更跟手 */
+  /** 一键整理：关动画 + 关遥测类服务 + 电池白名单，让App更跟手 */
   async tune({ pkg } = {}) {
     const cmds = [
       'settings put global window_animation_scale 0',
@@ -127,7 +127,7 @@ class AndroidSettings {
     return { ok: true };
   }
 
-  /** 应用运行时权限一览 + 授权 */
+  /** App运行时权限一览 + 授权 */
   async permissions(pkg) {
     const c = await this.client();
     const dump = await c.shell(`dumpsys package ${pkg}`, { timeout: 20000 });

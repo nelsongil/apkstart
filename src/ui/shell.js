@@ -1,5 +1,5 @@
 'use strict';
-/* 应用窗口标题栏：只有 旋转 / 最小化 / 最大化 / 关闭，其余设置都在 ApkStart 主界面 */
+/* Ventana de la app标题栏: 只有 旋转 / Minimizar / Maximizar / Cerrar, 其余Ajustes都在 ApkStart 主界面 */
 const api = window.apkstart;
 const $ = (id) => document.getElementById(id);
 
@@ -15,11 +15,11 @@ btn.min.addEventListener('click', () => api.shell.minimize());
 btn.max.addEventListener('click', () => api.shell.maximize());
 btn.close.addEventListener('click', () => api.shell.close());
 
-// 标题栏上右键不要弹出 Chromium 的网页菜单；画面区域的右键已由主进程
-// 拦下并映射成「安卓返回」，这里补掉外壳这一圈。
+// 标题栏上右键不要弹出 Chromium 的网页菜单; 画面区域的右键已由主进程
+// 拦下并映射成«安卓返回», 这里补掉外壳这一圈.
 window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// Ctrl+R 旋转，F11 最大化（和 Windows 习惯一致）
+// Ctrl+R 旋转, F11 Maximizar (和 Windows 习惯一致)
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); api.shell.rotate(); }
   else if (e.key === 'F11') { e.preventDefault(); api.shell.maximize(); }
@@ -29,7 +29,7 @@ window.addEventListener('keydown', (e) => {
 
 function applyState(s) {
   if (!s) return;
-  $('appName').textContent = s.label || '应用';
+  $('appName').textContent = s.label || 'App';
   $('bootName').textContent = s.label || '';
   const icon = s.iconUrl || '';
   if (icon) {

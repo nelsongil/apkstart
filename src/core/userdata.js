@@ -7,13 +7,13 @@
  *    文件，真正的格式化应该由 avdmanager 调 SDK 的 mke2fs 完成。ApkStart 是直接
  *    写 config.ini 拉起 emulator 的，跳过了那一步 —— 于是 /data 一直是全零，
  *    内核报 "Invalid ext4 superblock on /dev/block/vdc"，guest 掉进
- *    recovery 重启循环，adbd 永远不上线。表现就是「点开应用等好几分钟最后失败」。
+ *    recovery 重启循环，adbd 永远不上线。表现就是「点开App等好几分钟最后失败」。
  *    （emulator 只带 e2fsck/resize2fs/tune2fs，**不带 mke2fs**，所以它自己也不会格式化。）
  *
  * 2. 块大小必须是 4096。Android 13 的 /data 走 metadata encryption，
  *    vold 会在 userdata 上叠一层 dm-default-key。该 dm 设备的逻辑块大小是
  *    4096，而内核 sb_set_blocksize() 要求 fs block size >= 逻辑块大小，
- *    用 1KB block 的镜像会得到 mount() = EINVAL，日志长得像这样：
+ *    用 1KB block 的镜像会得到 mount() = EINVAL，Registros长得像这样：
  *      vold: [libfs_mgr] Cannot mount filesystem on /dev/block/dm-40 at /data: Invalid argument
  *      vold: fs_mgr_do_mount failed with rc -1
  *    换成 4KB block 就正常了。
